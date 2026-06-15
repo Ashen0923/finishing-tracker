@@ -1535,19 +1535,19 @@ function openEditModal(key){
 function closeEditModal(){document.getElementById("edit-modal").style.display="none";editingStyleKey=null;}
 function saveEditModal(){
   if(!editingStyleKey)return;
-  const s=styles.find(st=>st.styleKey===editingStyleKey);
-  if(!s)return;
-  s.awRmWashTie=document.getElementById("m-rm-wash-tie").value;
-  s.awRmWashTack=document.getElementById("m-rm-wash-tack").value;
-  s.awRmLabel=document.getElementById("m-rm-label").value;
-  s.awLoop=document.getElementById("m-loop").value;
-  s.awReinforce=document.getElementById("m-reinforce").value;
-  s.awTab=document.getElementById("m-tab").value;
-  s.awDummyRm=document.getElementById("m-dummy-rm").value;
-  s.awPocketClean=document.getElementById("m-pocket-clean").value;
-  s.awTackCount=document.getElementById("modal-tack-count").value;
+  const idx=styles.findIndex(st=>st.styleKey===editingStyleKey);
+  if(idx===-1)return;
+  styles[idx].awRmWashTie  = document.getElementById("m-rm-wash-tie").value;
+  styles[idx].awRmWashTack = document.getElementById("m-rm-wash-tack").value;
+  styles[idx].awRmLabel    = document.getElementById("m-rm-label").value;
+  styles[idx].awLoop       = document.getElementById("m-loop").value;
+  styles[idx].awReinforce  = document.getElementById("m-reinforce").value;
+  styles[idx].awTab        = document.getElementById("m-tab").value;
+  styles[idx].awDummyRm    = document.getElementById("m-dummy-rm").value;
+  styles[idx].awPocketClean= document.getElementById("m-pocket-clean").value;
+  styles[idx].awTackCount  = document.getElementById("modal-tack-count").value;
   closeEditModal();
-  showAlert("style-alert","After Wash tack types updated. Remember to save to GitHub.","success");
+  showAlert("style-alert","After Wash tack types updated successfully. Remember to save to GitHub.","success");
   renderStyleDB();
 }
 
@@ -1586,32 +1586,49 @@ function closeEditEntry(){
 
 function saveEditEntry(){
   if(!editEntryProcess||!editEntryRowId)return;
-  const arr=editEntryProcess==="bw"?bwTx:awTx;
-  const tx=arr.find(t=>t.rowId===editEntryRowId);
-  if(!tx)return;
-  // Allow user to clear any field — no mandatory validation
-  const inDate=document.getElementById("ee-in-date").value;
-  const inTime=document.getElementById("ee-in-time").value;
-  const inQty=document.getElementById("ee-in-qty").value;
-  const outDate=document.getElementById("ee-out-date").value;
-  const outTime=document.getElementById("ee-out-time").value;
-  const outQty=document.getElementById("ee-out-qty").value;
-  const remarks=document.getElementById("ee-remarks").value;
-  // Update all fields — empty string means cleared/removed
-  tx.inDate  = inDate;
-  tx.inTime  = inTime;
-  tx.inQty   = inQty!==""?Number(inQty):"";
-  tx.outDate = outDate;
-  tx.outTime = outTime;
-  tx.outQty  = outQty!==""?Number(outQty):"";
-  tx.wipRow  = (inQty!==""?Number(inQty):0)-(outQty!==""?Number(outQty):0);
-  tx.month   = monthStr(inDate||outDate);
-  tx.week    = weekNum(inDate||outDate);
-  tx.remarks = remarks;
-  recalcCumulative(editEntryProcess,tx.styleName,tx.color);
+
+  const inDate  = document.getElementById("ee-in-date").value;
+  const inTime  = document.getElementById("ee-in-time").value;
+  const inQty   = document.getElementById("ee-in-qty").value;
+  const outDate = document.getElementById("ee-out-date").value;
+  const outTime = document.getElementById("ee-out-time").value;
+  const outQty  = document.getElementById("ee-out-qty").value;
+  const remarks = document.getElementById("ee-remarks").value;
+
+  // Find index directly in the global array and update in place
+  if(editEntryProcess==="bw"){
+    const idx=bwTx.findIndex(t=>t.rowId===editEntryRowId);
+    if(idx===-1)return;
+    bwTx[idx].inDate  = inDate;
+    bwTx[idx].inTime  = inTime;
+    bwTx[idx].inQty   = inQty!==""?Number(inQty):"";
+    bwTx[idx].outDate = outDate;
+    bwTx[idx].outTime = outTime;
+    bwTx[idx].outQty  = outQty!==""?Number(outQty):"";
+    bwTx[idx].wipRow  = (inQty!==""?Number(inQty):0)-(outQty!==""?Number(outQty):0);
+    bwTx[idx].month   = monthStr(inDate||outDate);
+    bwTx[idx].week    = weekNum(inDate||outDate);
+    bwTx[idx].remarks = remarks;
+    recalcCumulative("bw",bwTx[idx].styleName,bwTx[idx].color);
+  } else {
+    const idx=awTx.findIndex(t=>t.rowId===editEntryRowId);
+    if(idx===-1)return;
+    awTx[idx].inDate  = inDate;
+    awTx[idx].inTime  = inTime;
+    awTx[idx].inQty   = inQty!==""?Number(inQty):"";
+    awTx[idx].outDate = outDate;
+    awTx[idx].outTime = outTime;
+    awTx[idx].outQty  = outQty!==""?Number(outQty):"";
+    awTx[idx].wipRow  = (inQty!==""?Number(inQty):0)-(outQty!==""?Number(outQty):0);
+    awTx[idx].month   = monthStr(inDate||outDate);
+    awTx[idx].week    = weekNum(inDate||outDate);
+    awTx[idx].remarks = remarks;
+    recalcCumulative("aw",awTx[idx].styleName,awTx[idx].color);
+  }
+
   closeEditEntry();
   renderTodayEntries(editEntryProcess);
-  showAlert(`${editEntryProcess}-entry-alert`,"Entry updated. Remember to save to GitHub.","success");
+  showAlert(`${editEntryProcess}-entry-alert`,"Entry updated successfully. Remember to save to GitHub.","success");
 }
 
 // ── INIT ─────────────────────────────────────────────
