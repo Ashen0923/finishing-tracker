@@ -888,7 +888,10 @@ function showPage(page,btn){
 }
 
 // ── UTILS ────────────────────────────────────────────
-const today=()=>new Date().toISOString().split("T")[0];
+const today=()=>{
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
 const todayDisp=()=>new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
 function weekNum(d){if(!d)return"";const dt=new Date(d),s=new Date(dt.getFullYear(),0,1);return"W"+Math.ceil(((dt-s)/86400000+s.getDay()+1)/7);}
 const monthStr=d=>d?new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";
@@ -1273,9 +1276,9 @@ function addEntry(process){
     rowId:Date.now().toString(),month:monthStr(inDate||outDate),week:weekNum(inDate||outDate),
     styleKey:sKey(styleName,color),styleName,color,
     factory:s.factory,product:s.product,washType:s.washType,tackSample:s.tackSample,acc:s.acc,
-    inDate:inDate?new Date(inDate).toISOString().split("T")[0]:"",
+    inDate:inDate||"",
     inTime,inQty:inQty!==""?Number(inQty):"",
-    outDate:outDate?new Date(outDate).toISOString().split("T")[0]:"",
+    outDate:outDate||"",
     outTime,outQty:outQty!==""?Number(outQty):"",
     wipRow:rowWip,cumulativeWip:0,remarks
   };
@@ -1315,8 +1318,8 @@ function renderTodayEntries(process){
   // Normalize dates for Edge compatibility
   const normDate=d=>{
     if(!d) return "";
-    try{ return new Date(d).toISOString().split("T")[0]; }
-    catch(e){ return String(d).slice(0,10); }
+    // Use local date string directly — avoid UTC conversion issues
+    return String(d).slice(0,10);
   };
   const todayTx=arr.filter(tx=>normDate(tx.inDate)===t||normDate(tx.outDate)===t);
   const cntEl=document.getElementById(`${process}-today-count`);
