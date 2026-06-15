@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Finishing &amp; Washing Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1F3864;--blue:#2E75B6;--lblue:#BDD7EE;--pale:#DEEAF1;
+  --orange:#E8A020;--green:#2E7D32;--lgreen:#E8F5E9;
+  --red:#C62828;--lred:#FFEBEE;--grey:#546E7A;--lgrey:#F5F7FA;
+  --purple:#6A1B9A;--lpurple:#F3E5F5;
+  --teal:#00695C;--lteal:#E0F2F1;
+  --white:#FFFFFF;--sidebar-w:240px;--border:#DDE3EA;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#EEF2F7;color:#1a1a2e;display:flex;min-height:100vh;font-size:13px;}
+#sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;box-shadow:3px 0 12px rgba(0,0,0,.15);overflow-y:auto;}
+.sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo h1{font-size:11.5px;font-weight:700;color:#fff;letter-spacing:.8px;text-transform:uppercase;line-height:1.5;}
+.sb-logo p{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;}
+.sb-sec{padding:14px 18px 5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.28);letter-spacing:1.2px;text-transform:uppercase;}
+#sidebar nav button{width:100%;background:none;border:none;color:rgba(255,255,255,.62);text-align:left;padding:9px 18px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all .15s;}
+#sidebar nav button:hover{background:rgba(255,255,255,.07);color:#fff;}
+#sidebar nav button.active{background:var(--blue);color:#fff;font-weight:600;}
+#sidebar nav button.active-aw{background:var(--purple)!important;}
+#sidebar nav button .ic{font-size:13px;width:16px;text-align:center;}
+.sb-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);margin-top:auto;}
+.sb-footer .ls{font-size:10px;color:rgba(255,255,255,.35);margin-bottom:9px;}
+#sync-btn{width:100%;padding:9px;background:var(--orange);color:#fff;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;}
+#sync-btn:hover{opacity:.88;}
+#sync-status{margin-top:7px;font-size:10px;text-align:center;}
+#main{margin-left:var(--sidebar-w);flex:1;}
+.page{display:none;min-height:100vh;}
+.page.active{display:block;}
+.page-top{background:#fff;border-bottom:1px solid var(--border);padding:18px 30px;display:flex;align-items:center;justify-content:space-between;}
+.page-top h2{font-size:18px;font-weight:700;color:var(--navy);}
+.page-top p{font-size:11.5px;color:var(--grey);margin-top:2px;}
+.page-top .badge-bw{background:var(--lblue);color:var(--blue);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.page-top .badge-aw{background:var(--lpurple);color:var(--purple);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;}
+.page-body{padding:22px 30px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.kpi-card{background:#fff;border-radius:10px;padding:16px 18px;border-top:3px solid var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.kpi-card.g{border-top-color:var(--green);}
+.kpi-card.o{border-top-color:var(--orange);}
+.kpi-card.r{border-top-color:var(--red);}
+.kpi-card.p{border-top-color:var(--purple);}
+.kpi-card.t{border-top-color:var(--teal);}
+.kpi-label{font-size:10px;font-weight:600;color:var(--grey);text-transform:uppercase;letter-spacing:.6px;}
+.kpi-val{font-size:28px;font-weight:700;color:var(--navy);margin-top:5px;line-height:1;}
+.kpi-sub{font-size:10px;color:var(--grey);margin-top:4px;}
+.section{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:18px;overflow:hidden;}
+.section-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.section-hdr h3{font-size:13px;font-weight:700;color:var(--navy);}
+.filter-bar{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 20px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+.filter-bar .fg{display:flex;flex-direction:column;gap:4px;min-width:130px;}
+.filter-bar label{font-size:10px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;}
+.filter-bar select,.filter-bar input[type=date]{padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;color:#222;background:#fff;}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--blue);}
+.btn-clear{padding:7px 14px;background:var(--lgrey);border:1.5px solid var(--border);border-radius:6px;font-size:12px;color:var(--grey);cursor:pointer;font-weight:600;}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.chart-box{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);padding:18px;}
+.chart-box h4{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:14px;}
+.chart-box canvas{max-height:210px;}
+.form-card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:18px;}
+.form-card-hdr{background:var(--navy);padding:13px 20px;color:#fff;font-size:13px;font-weight:700;}
+.form-card-hdr.blue{background:var(--blue);}
+.form-card-hdr.purple{background:var(--purple);}
+.form-card-body{padding:20px;}
+.fg2{display:flex;flex-direction:column;gap:4px;}
+.fg2 label{font-size:10px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;}
+.fg2 input,.fg2 select{padding:8px 11px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;color:#222;background:#fff;width:100%;}
+.fg2 input:focus,.fg2 select:focus{outline:none;border-color:var(--blue);}
+.fg2 input[readonly]{background:var(--lgrey);color:var(--grey);cursor:not-allowed;}
+.field-group{display:grid;gap:12px;margin-bottom:14px;}
+.col2{grid-template-columns:1fr 1fr;}
+.col3{grid-template-columns:1fr 1fr 1fr;}
+.col4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.col5{grid-template-columns:repeat(5,1fr);}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.sub-label{font-size:10px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+.tack-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.tack-count-row{display:flex;align-items:center;gap:14px;margin-top:14px;padding:11px 15px;background:var(--pale);border-radius:8px;border-left:4px solid var(--blue);}
+.tack-count-row.aw{background:var(--lpurple);border-left-color:var(--purple);}
+.tack-count-row span{font-size:12px;font-weight:600;color:var(--navy);}
+.tack-count-val{font-size:22px;font-weight:700;color:var(--blue);min-width:36px;}
+.tack-count-val.aw{color:var(--purple);}
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.io-panel{border-radius:8px;padding:16px;border:1.5px solid var(--border);}
+.io-panel.in{background:#F0F7FF;border-color:#BDD7EE;}
+.io-panel.out{background:#F1F8F1;border-color:#A5D6A7;}
+.io-panel.in-aw{background:#F5F0FF;border-color:#CE93D8;}
+.io-panel.out-aw{background:#E0F2F1;border-color:#80CBC4;}
+.io-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.io-panel.in .io-title{color:var(--blue);}
+.io-panel.out .io-title{color:var(--green);}
+.io-panel.in-aw .io-title{color:var(--purple);}
+.io-panel.out-aw .io-title{color:var(--teal);}
+.autofill-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 14px;background:var(--lgrey);border-radius:8px;border:1.5px solid var(--border);margin-bottom:14px;}
+.af-item .af-lbl{font-size:9px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+.af-item .af-val{font-size:13px;font-weight:600;color:var(--navy);}
+.wip-preview{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);margin-bottom:14px;}
+.wp-box{flex:1;padding:13px 16px;border-right:1px solid var(--border);}
+.wp-box:last-child{border-right:none;}
+.wp-lbl{font-size:10px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.wp-val{font-size:22px;font-weight:700;color:var(--navy);}
+.wp-box.o{background:#FFF8EC;}.wp-box.o .wp-val{color:var(--orange);}
+.wp-box.r{background:#FFF5F5;}.wp-box.r .wp-val{color:var(--red);}
+.wp-box.info{background:var(--lgrey);}
+.btn-row{display:flex;gap:10px;padding-top:4px;}
+.btn{padding:9px 22px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn:hover{opacity:.88;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-success{background:var(--green);color:#fff;}
+.btn-danger{background:#e53935;color:#fff;}
+.btn-ghost{background:var(--lgrey);color:var(--grey);border:1.5px solid var(--border);}
+.btn-sm{padding:4px 11px;font-size:11px;}
+.btn-edit{background:#FFF8E1;color:#E65100;border:1px solid #FFE082;padding:4px 11px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;}
+.alert{padding:10px 14px;border-radius:6px;font-size:12.5px;margin-bottom:12px;}
+.alert-success{background:#E8F5E9;color:#2E7D32;border-left:4px solid #2E7D32;}
+.alert-warn{background:#FFF8E1;color:#F57F17;border-left:4px solid #F9A825;}
+.alert-error{background:#FFEBEE;color:#C62828;border-left:4px solid #C62828;}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:10.5px;white-space:nowrap;}
+tbody tr:nth-child(even){background:#F9FAFB;}
+tbody tr:hover{background:var(--pale);}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;}
+.bz{background:#E8F5E9;color:#2E7D32;}
+.bl{background:#FFF8E1;color:#E65100;}
+.bh{background:#FFEBEE;color:#C62828;}
+.no-data{text-align:center;padding:36px;color:var(--grey);font-size:13px;}
+.ac-wrap{position:relative;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 6px 6px;max-height:190px;overflow-y:auto;z-index:500;box-shadow:0 6px 16px rgba(0,0,0,.1);}
+.ac-list div{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f4f8;font-size:13px;}
+.ac-list div:hover{background:var(--pale);}
+.ac-list div small{font-size:10px;color:var(--blue);margin-left:6px;}
+.stage-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+.stage-card{background:#fff;border-radius:10px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);border-top:4px solid var(--blue);text-align:center;}
+.stage-card.washing{border-top-color:var(--purple);}
+.stage-card.afterwash{border-top-color:var(--teal);}
+.stage-card h4{font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+.stage-card .sv{font-size:36px;font-weight:700;color:var(--navy);}
+.stage-card p{font-size:11px;color:var(--grey);margin-top:5px;}
+.rank-num{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+#loading-overlay{position:fixed;inset:0;background:#1F3864;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;overflow:hidden;}
+.ld-ring{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);}
+.ld-ring-1{width:620px;height:620px;border:1px solid rgba(232,160,32,.07);animation:ldspin 14s linear infinite;}
+.ld-ring-2{width:420px;height:420px;border:1px solid rgba(232,160,32,.11);animation:ldspin 9s linear infinite reverse;}
+.ld-ring-3{width:250px;height:250px;border:1px solid rgba(232,160,32,.17);animation:ldspin 5s linear infinite;}
+@keyframes ldspin{to{transform:translate(-50%,-50%) rotate(360deg);}}
+@keyframes ldprogress{0%{width:0%;opacity:1}85%{width:100%;opacity:1}100%{width:100%;opacity:0}}
+@keyframes lddot{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+.ld-center{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:24px;padding:32px;}
+.ld-logos{display:flex;align-items:center;gap:20px;}
+.ld-divider{width:1px;height:42px;background:rgba(255,255,255,.18);}
+.ld-logo-e2e{background:rgba(255,255,255,.93);border-radius:7px;padding:4px 12px;}
+.ld-titles{text-align:center;}
+.ld-titles h1{color:#fff;font-size:23px;font-weight:700;margin:0 0 6px;}
+.ld-titles p{color:rgba(255,255,255,.36);font-size:12px;margin:0;}
+.ld-bar-wrap{width:300px;}
+.ld-bar-track{width:100%;height:5px;background:rgba(255,255,255,.08);border-radius:10px;overflow:hidden;margin-bottom:9px;}
+.ld-bar-fill{height:100%;background:linear-gradient(90deg,#E8A020,#f59e0b);border-radius:10px;animation:ldprogress 1.8s ease-in-out infinite;}
+#loading-text{color:rgba(255,255,255,.3);font-size:11px;text-align:center;letter-spacing:.3px;}
+.ld-dots{display:flex;gap:8px;}
+.ld-dot{width:7px;height:7px;border-radius:50%;background:#E8A020;}
+/* Modal for edit style */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+.modal-box{background:#fff;border-radius:12px;width:90%;max-width:800px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-hdr{background:var(--navy);color:#fff;padding:16px 22px;border-radius:12px 12px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.modal-hdr h3{font-size:14px;font-weight:700;}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;line-height:1;}
+.modal-body{padding:22px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading-overlay">
+  <div class="ld-ring ld-ring-1"></div>
+  <div class="ld-ring ld-ring-2"></div>
+  <div class="ld-ring ld-ring-3"></div>
+  <div class="ld-center">
+    <div class="ld-logos">
+      <img src="https://www.star.lk/wp-content/uploads/2024/12/star-logo.svg" alt="Star" height="48" style="filter:brightness(0) invert(1)" onerror="this.style.display='none'"/>
+      <div class="ld-divider"></div>
+      <img src="https://www.end2end.lk/images/logo-2.png" alt="End2End" height="28" class="ld-logo-e2e" onerror="this.style.display='none'"/>
+    </div>
+    <div class="ld-titles">
+      <h1>Finishing &amp; Washing Tracker</h1>
+      <p>Before Wash &amp; After Wash Management System</p>
+    </div>
+    <div class="ld-bar-wrap">
+      <div class="ld-bar-track"><div class="ld-bar-fill"></div></div>
+      <div id="loading-text">Connecting to data source…</div>
+    </div>
+    <div class="ld-dots">
+      <div class="ld-dot" style="animation:lddot 1.2s ease-in-out 0s infinite"></div>
+      <div class="ld-dot" style="animation:lddot 1.2s ease-in-out .2s infinite"></div>
+      <div class="ld-dot" style="animation:lddot 1.2s ease-in-out .4s infinite"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP MODAL — shown only on first open -->
+<div id="setup-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:500px">
+    <div class="modal-hdr" style="background:var(--navy)">
+      <h3>GitHub Connection Setup</h3>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--grey);margin-bottom:18px;line-height:1.6">
+        This is a one-time setup. Your details will be saved on this computer and you won't need to enter them again.
+      </p>
+      <div class="field-group" style="grid-template-columns:1fr;gap:14px">
+        <div class="fg2">
+          <label>GitHub Username</label>
+          <input type="text" id="setup-owner" placeholder="e.g. Ashen0923"/>
+        </div>
+        <div class="fg2">
+          <label>Repository Name</label>
+          <input type="text" id="setup-repo" placeholder="e.g. finishing-tracker"/>
+        </div>
+        <div class="fg2">
+          <label>GitHub Personal Access Token</label>
+          <input type="password" id="setup-token" placeholder="ghp_xxxxxxxxxxxx"/>
+        </div>
+      </div>
+      <div id="setup-alert" style="margin-top:12px"></div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn btn-primary" onclick="submitSetup()">Connect & Start</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT STYLE MODAL -->
+<div id="edit-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3>Edit Style — After Wash Tack Types</h3>
+      <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-alert"></div>
+      <div style="background:var(--lgrey);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="modal-style-info"></div>
+      <div class="divider" style="margin:0 0 16px"></div>
+      <div class="sub-label">After Wash Tack Types</div>
+      <div class="tack-grid" id="modal-tack-grid"></div>
+      <div class="tack-count-row aw" style="margin-top:14px">
+        <span>Count of After Wash Tack Types (auto-calculated):</span>
+        <div class="tack-count-val aw" id="modal-tack-count-display">0</div>
+        <input type="hidden" id="modal-tack-count" value="0"/>
+      </div>
+      <div class="btn-row" style="margin-top:18px">
+        <button class="btn btn-purple" onclick="saveEditModal()">Save Changes</button>
+        <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT ENTRY MODAL -->
+<div id="edit-entry-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3 id="edit-entry-title">Edit Entry</h3>
+      <button class="modal-close" onclick="closeEditEntry()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="edit-entry-alert"></div>
+      <div style="background:var(--lgrey);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="edit-entry-info"></div>
+      <div class="divider" style="margin:0 0 16px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div style="background:#F0F7FF;border:1.5px solid #BDD7EE;border-radius:8px;padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">IN Details</div>
+          <div class="field-group col3" style="margin-bottom:0">
+            <div class="fg2"><label>IN Date</label><input type="date" id="ee-in-date"/></div>
+            <div class="fg2"><label>IN Time</label><input type="time" id="ee-in-time"/></div>
+            <div class="fg2"><label>IN Quantity</label><input type="number" id="ee-in-qty" min="0"/></div>
+          </div>
+        </div>
+        <div style="background:#F1F8F1;border:1.5px solid #A5D6A7;border-radius:8px;padding:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">OUT Details</div>
+          <div class="field-group col3" style="margin-bottom:0">
+            <div class="fg2"><label>OUT Date</label><input type="date" id="ee-out-date"/></div>
+            <div class="fg2"><label>OUT Time</label><input type="time" id="ee-out-time"/></div>
+            <div class="fg2"><label>OUT Quantity</label><input type="number" id="ee-out-qty" min="0"/></div>
+          </div>
+        </div>
+      </div>
+      <div class="fg2" style="margin-bottom:16px">
+        <label>Remarks</label>
+        <input type="text" id="ee-remarks" placeholder="Optional notes…"/>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveEditEntry()">Save Changes</button>
+        <button class="btn btn-ghost" onclick="closeEditEntry()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sb-logo">
+    <h1>Finishing &amp; Washing<br>Tracker</h1>
+    <p>Before Wash &amp; After Wash System</p>
+  </div>
+  <nav>
+    <div class="sb-sec">Before Wash</div>
+    <button class="active" onclick="showPage('bw-dash',this)"><span class="ic">&#9632;</span>BW Dashboard</button>
+    <button onclick="showPage('bw-entry',this)"><span class="ic">&#9998;</span>BW Daily Entry</button>
+    <div class="sb-sec">After Wash</div>
+    <button onclick="showPage('aw-dash',this)"><span class="ic">&#9632;</span>AW Dashboard</button>
+    <button onclick="showPage('aw-entry',this)"><span class="ic">&#9998;</span>AW Daily Entry</button>
+    <div class="sb-sec">Reports</div>
+    <button onclick="showPage('process-view',this)"><span class="ic">&#9670;</span>Complete Process</button>
+    <button onclick="showPage('wip-summary',this)"><span class="ic">&#9672;</span>WIP Summary</button>
+    <button onclick="showPage('all-tx',this)"><span class="ic">&#8801;</span>All Transactions</button>
+    <div class="sb-sec">Master Data</div>
+    <button onclick="showPage('style-db',this)"><span class="ic">&#9647;</span>Style Database</button>
+  </nav>
+  <div class="sb-footer">
+    <div class="ls">Last saved: <span id="last-saved">Not yet saved</span></div>
+    <button id="sync-btn" onclick="saveToGitHub()">Save to GitHub</button>
+    <div id="sync-status"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+<!-- BW DASHBOARD -->
+<div id="page-bw-dash" class="page active">
+  <div class="page-top">
+    <div><h2>Before Wash — Operations Overview</h2><p id="bw-dash-date"></p></div>
+    <span class="badge-bw">BEFORE WASH</span>
+  </div>
+  <div class="page-body">
+    <div class="filter-bar">
+      <div class="fg"><label>Date Range</label>
+        <select id="bdf-range" onchange="onBWFilterChange()">
+          <option value="all">All Time</option><option value="today">Today</option>
+          <option value="week">This Week</option><option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
+        </select></div>
+      <div class="fg" id="bdf-cw1" style="display:none"><label>From</label><input type="date" id="bdf-from" onchange="renderBWDash()"/></div>
+      <div class="fg" id="bdf-cw2" style="display:none"><label>To</label><input type="date" id="bdf-to" onchange="renderBWDash()"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="bdf-factory" onchange="renderBWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Product</label>
+        <select id="bdf-product" onchange="renderBWDash()"><option value="">All Products</option><option>Shirt</option><option>Short</option><option>Jkt</option><option>Bls</option><option>Skirt</option><option>Frock</option></select></div>
+      <div class="fg"><label>Wash Type</label>
+        <select id="bdf-wash" onchange="renderBWDash()"><option value="">All</option><option>Denim</option><option>Gmt Dye</option><option>Pigment Dye</option><option>Normal</option></select></div>
+      <button class="btn-clear" onclick="clearBWFilters()">Clear</button>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total IN</div><div class="kpi-val" id="bk-in">0</div><div class="kpi-sub">Received from Factory into Finishing</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Total OUT</div><div class="kpi-val" id="bk-out">0</div><div class="kpi-sub">Dispatched from Finishing to Washing</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Current WIP</div><div class="kpi-val" id="bk-wip">0</div><div class="kpi-sub">Qty sitting in Finishing pending dispatch to Washing</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Styles with Open WIP</div><div class="kpi-val" id="bk-open">0</div><div class="kpi-sub">Pending dispatch</div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total Entries</div><div class="kpi-val" id="bk-entries">0</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="bk-cleared">0</div><div class="kpi-sub">WIP = 0</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Highest WIP Style</div><div class="kpi-val" id="bk-top-style" style="font-size:14px;margin-top:7px">—</div><div class="kpi-sub" id="bk-top-style-sub"></div></div>
+      <div class="kpi-card r"><div class="kpi-label">Factory — Most WIP</div><div class="kpi-val" id="bk-top-fac" style="font-size:20px;margin-top:5px">—</div><div class="kpi-sub" id="bk-top-fac-sub"></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>Daily IN vs OUT — Last 14 Days</h4><canvas id="bw-chart-daily"></canvas></div>
+      <div class="chart-box"><h4>WIP by Factory</h4><canvas id="bw-chart-factory"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>WIP Trend — Last 30 Days</h4><canvas id="bw-chart-trend"></canvas></div>
+      <div class="chart-box"><h4>WIP Distribution by Style</h4><canvas id="bw-chart-donut"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>WIP by Product Type</h4><canvas id="bw-chart-product"></canvas></div>
+      <div class="section" style="margin-bottom:0">
+        <div class="section-hdr"><h3>All Styles by WIP</h3></div>
+        <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
+          <thead><tr><th>#</th><th>Style</th><th>Color</th><th>Factory</th><th>Total IN</th><th>Total OUT</th><th>BW WIP</th><th>In Washing</th><th>Since</th></tr></thead>
+          <tbody id="bw-top5"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BW DAILY ENTRY -->
+<div id="page-bw-entry" class="page">
+  <div class="page-top"><div><h2>Before Wash — Daily Entry</h2><p>Tracks qty received from Factory into Finishing &rarr; Dispatched from Finishing to Washing</p></div><span class="badge-bw">BEFORE WASH</span></div>
+  <div class="page-body">
+    <div id="bw-entry-alert"></div>
+    <div class="form-card">
+      <div class="form-card-hdr">Style Selection</div>
+      <div class="form-card-body">
+        <div class="field-group col2">
+          <div class="fg2"><label>Style Name</label>
+            <div class="ac-wrap"><input type="text" id="bf-style" placeholder="Type style name…" oninput="styleAC(this.value,'bf')" autocomplete="off"/>
+            <div class="ac-list" id="bf-ac" style="display:none"></div></div></div>
+          <div class="fg2"><label>Color</label>
+            <select id="bf-color" onchange="onColorSel('bf')"><option value="">&#8212; Select Color &#8212;</option></select></div>
+        </div>
+        <div class="autofill-row">
+          <div class="af-item"><div class="af-lbl">Factory</div><div class="af-val" id="bf-af-factory">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Product</div><div class="af-val" id="bf-af-product">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Wash Type</div><div class="af-val" id="bf-af-wash">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Tack Sample</div><div class="af-val" id="bf-af-tack">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">ACC</div><div class="af-val" id="bf-af-acc">&#8212;</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-hdr blue">Quantity Details</div>
+      <div class="form-card-body">
+        <div class="io-grid">
+          <div class="io-panel in">
+            <div class="io-title">IN — Received from Factory to Finishing</div>
+            <div class="field-group col3" style="margin-bottom:0">
+              <div class="fg2"><label>IN Date</label><input type="date" id="bf-in-date" oninput="updateWIPPrev('bf')"/></div>
+              <div class="fg2"><label>IN Time</label><input type="time" id="bf-in-time"/></div>
+              <div class="fg2"><label>IN Quantity</label><input type="number" id="bf-in-qty" min="0" placeholder="0" oninput="updateWIPPrev('bf')"/></div>
+            </div>
+          </div>
+          <div class="io-panel out">
+            <div class="io-title">OUT — Dispatched from Finishing to Washing</div>
+            <div class="field-group col3" style="margin-bottom:0">
+              <div class="fg2"><label>OUT Date</label><input type="date" id="bf-out-date" oninput="updateWIPPrev('bf')"/></div>
+              <div class="fg2"><label>OUT Time</label><input type="time" id="bf-out-time"/></div>
+              <div class="fg2"><label>OUT Quantity</label><input type="number" id="bf-out-qty" min="0" placeholder="0" oninput="updateWIPPrev('bf')"/></div>
+            </div>
+          </div>
+        </div>
+        <div class="wip-preview">
+          <div class="wp-box info"><div class="wp-lbl">Style</div><div class="wp-val" id="bf-wp-style" style="font-size:15px">&#8212;</div></div>
+          <div class="wp-box o"><div class="wp-lbl">Row WIP</div><div class="wp-val" id="bf-wp-row">&#8212;</div></div>
+          <div class="wp-box r"><div class="wp-lbl">Cumulative WIP (after this entry)</div><div class="wp-val" id="bf-wp-cum">&#8212;</div></div>
+        </div>
+        <div class="field-group" style="grid-template-columns:1fr;margin-bottom:0">
+          <div class="fg2"><label>Remarks</label><input type="text" id="bf-remarks" placeholder="Optional…"/></div>
+        </div>
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-primary" onclick="addEntry('bw')">Add Entry</button>
+          <button class="btn btn-ghost" onclick="clearEntryForm('bf')">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>Today's Entries</h3><span id="bw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
+        <tbody id="bw-today-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- AW DASHBOARD -->
+<div id="page-aw-dash" class="page">
+  <div class="page-top">
+    <div><h2>After Wash — Operations Overview</h2><p id="aw-dash-date"></p></div>
+    <span class="badge-aw">AFTER WASH</span>
+  </div>
+  <div class="page-body">
+    <div class="filter-bar">
+      <div class="fg"><label>Date Range</label>
+        <select id="adf-range" onchange="onAWFilterChange()">
+          <option value="all">All Time</option><option value="today">Today</option>
+          <option value="week">This Week</option><option value="month">This Month</option>
+          <option value="custom">Custom Range</option>
+        </select></div>
+      <div class="fg" id="adf-cw1" style="display:none"><label>From</label><input type="date" id="adf-from" onchange="renderAWDash()"/></div>
+      <div class="fg" id="adf-cw2" style="display:none"><label>To</label><input type="date" id="adf-to" onchange="renderAWDash()"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="adf-factory" onchange="renderAWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Product</label>
+        <select id="adf-product" onchange="renderAWDash()"><option value="">All Products</option><option>Shirt</option><option>Short</option><option>Jkt</option><option>Bls</option><option>Skirt</option><option>Frock</option></select></div>
+      <div class="fg"><label>Wash Type</label>
+        <select id="adf-wash" onchange="renderAWDash()"><option value="">All</option><option>Denim</option><option>Gmt Dye</option><option>Pigment Dye</option><option>Normal</option></select></div>
+      <button class="btn-clear" onclick="clearAWFilters()">Clear</button>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card p"><div class="kpi-label">Total IN</div><div class="kpi-val" id="ak-in">0</div><div class="kpi-sub">Received from Washing into Finishing</div></div>
+      <div class="kpi-card t"><div class="kpi-label">Total OUT</div><div class="kpi-val" id="ak-out">0</div><div class="kpi-sub">Dispatched from Finishing to Factory</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Current WIP</div><div class="kpi-val" id="ak-wip">0</div><div class="kpi-sub">Qty sitting in Finishing pending dispatch to Factory</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Styles with Open WIP</div><div class="kpi-val" id="ak-open">0</div><div class="kpi-sub">Pending dispatch</div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total Entries</div><div class="kpi-val" id="ak-entries">0</div><div class="kpi-sub">In period</div></div>
+      <div class="kpi-card t"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="ak-cleared">0</div><div class="kpi-sub">WIP = 0</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Highest WIP Style</div><div class="kpi-val" id="ak-top-style" style="font-size:14px;margin-top:7px">—</div><div class="kpi-sub" id="ak-top-style-sub"></div></div>
+      <div class="kpi-card r"><div class="kpi-label">Factory — Most WIP</div><div class="kpi-val" id="ak-top-fac" style="font-size:20px;margin-top:5px">—</div><div class="kpi-sub" id="ak-top-fac-sub"></div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>Daily IN vs OUT — Last 14 Days</h4><canvas id="aw-chart-daily"></canvas></div>
+      <div class="chart-box"><h4>WIP by Factory</h4><canvas id="aw-chart-factory"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>WIP Trend — Last 30 Days</h4><canvas id="aw-chart-trend"></canvas></div>
+      <div class="chart-box"><h4>WIP Distribution by Style</h4><canvas id="aw-chart-donut"></canvas></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>WIP by Product Type</h4><canvas id="aw-chart-product"></canvas></div>
+      <div class="section" style="margin-bottom:0">
+        <div class="section-hdr"><h3>All Styles by WIP</h3></div>
+        <div class="tbl-wrap" style="max-height:320px;overflow-y:auto"><table>
+          <thead><tr><th>#</th><th>Style</th><th>Color</th><th>Factory</th><th>Total IN</th><th>Total OUT</th><th>AW WIP</th><th>In Washing</th><th>Since</th></tr></thead>
+          <tbody id="aw-top5"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AW DAILY ENTRY -->
+<div id="page-aw-entry" class="page">
+  <div class="page-top"><div><h2>After Wash — Daily Entry</h2><p>Tracks qty received from Washing back into Finishing &rarr; Dispatched from Finishing to Factory</p></div><span class="badge-aw">AFTER WASH</span></div>
+  <div class="page-body">
+    <div id="aw-entry-alert"></div>
+    <div class="form-card">
+      <div class="form-card-hdr purple">Style Selection</div>
+      <div class="form-card-body">
+        <div class="field-group col2">
+          <div class="fg2"><label>Style Name</label>
+            <div class="ac-wrap"><input type="text" id="af-style" placeholder="Type style name…" oninput="styleAC(this.value,'af')" autocomplete="off"/>
+            <div class="ac-list" id="af-ac" style="display:none"></div></div></div>
+          <div class="fg2"><label>Color</label>
+            <select id="af-color" onchange="onColorSel('af')"><option value="">&#8212; Select Color &#8212;</option></select></div>
+        </div>
+        <div class="autofill-row">
+          <div class="af-item"><div class="af-lbl">Factory</div><div class="af-val" id="af-af-factory">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Product</div><div class="af-val" id="af-af-product">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Wash Type</div><div class="af-val" id="af-af-wash">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">Tack Sample</div><div class="af-val" id="af-af-tack">&#8212;</div></div>
+          <div class="af-item"><div class="af-lbl">ACC</div><div class="af-val" id="af-af-acc">&#8212;</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-hdr purple">Quantity Details</div>
+      <div class="form-card-body">
+        <div class="io-grid">
+          <div class="io-panel in-aw">
+            <div class="io-title">IN — Received from Washing to Finishing</div>
+            <div class="field-group col3" style="margin-bottom:0">
+              <div class="fg2"><label>IN Date</label><input type="date" id="af-in-date" oninput="updateWIPPrev('af')"/></div>
+              <div class="fg2"><label>IN Time</label><input type="time" id="af-in-time"/></div>
+              <div class="fg2"><label>IN Quantity</label><input type="number" id="af-in-qty" min="0" placeholder="0" oninput="updateWIPPrev('af')"/></div>
+            </div>
+          </div>
+          <div class="io-panel out-aw">
+            <div class="io-title">OUT — Dispatched from Finishing to Factory</div>
+            <div class="field-group col3" style="margin-bottom:0">
+              <div class="fg2"><label>OUT Date</label><input type="date" id="af-out-date" oninput="updateWIPPrev('af')"/></div>
+              <div class="fg2"><label>OUT Time</label><input type="time" id="af-out-time"/></div>
+              <div class="fg2"><label>OUT Quantity</label><input type="number" id="af-out-qty" min="0" placeholder="0" oninput="updateWIPPrev('af')"/></div>
+            </div>
+          </div>
+        </div>
+        <div class="wip-preview">
+          <div class="wp-box info"><div class="wp-lbl">Style</div><div class="wp-val" id="af-wp-style" style="font-size:15px">&#8212;</div></div>
+          <div class="wp-box o"><div class="wp-lbl">Row WIP</div><div class="wp-val" id="af-wp-row">&#8212;</div></div>
+          <div class="wp-box r"><div class="wp-lbl">Cumulative WIP (after this entry)</div><div class="wp-val" id="af-wp-cum">&#8212;</div></div>
+        </div>
+        <div class="field-group" style="grid-template-columns:1fr;margin-bottom:0">
+          <div class="fg2"><label>Remarks</label><input type="text" id="af-remarks" placeholder="Optional…"/></div>
+        </div>
+        <div class="btn-row" style="margin-top:16px">
+          <button class="btn btn-purple" onclick="addEntry('aw')">Add Entry</button>
+          <button class="btn btn-ghost" onclick="clearEntryForm('af')">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>Today's Entries</h3><span id="aw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
+        <tbody id="aw-today-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPLETE PROCESS VIEW -->
+<div id="page-process-view" class="page">
+  <div class="page-top"><div><h2>Complete Process View</h2><p>Full journey: Factory &#8594; Finishing &#8594; Washing &#8594; Factory</p></div></div>
+  <div class="page-body">
+    <div class="stage-cards">
+      <div class="stage-card">
+        <h4>Before Wash WIP — In Finishing</h4>
+        <div class="sv" id="proc-bw-wip">0</div>
+        <p>Received from Factory — pending dispatch to Washing</p>
+      </div>
+      <div class="stage-card washing">
+        <h4>In Washing Department</h4>
+        <div class="sv" id="proc-wash-wip">0</div>
+        <p>Dispatched to Washing — not yet returned to Finishing</p>
+      </div>
+      <div class="stage-card afterwash">
+        <h4>After Wash WIP — In Finishing</h4>
+        <div class="sv" id="proc-aw-wip">0</div>
+        <p>Received from Washing — pending dispatch to Factory</p>
+      </div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total Styles in System</div><div class="kpi-val" id="proc-total-styles">0</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Fully Cleared Styles</div><div class="kpi-val" id="proc-cleared">0</div><div class="kpi-sub">Both BW &amp; AW WIP = 0</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Longest Pending Style</div><div class="kpi-val" id="proc-oldest" style="font-size:14px;margin-top:7px">&#8212;</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Factory — Most Total WIP</div><div class="kpi-val" id="proc-top-fac" style="font-size:20px;margin-top:5px">&#8212;</div></div>
+    </div>
+    <div class="chart-row">
+      <div class="chart-box"><h4>WIP by Stage</h4><canvas id="proc-chart-stage"></canvas></div>
+      <div class="chart-box"><h4>Total WIP by Factory (All Stages)</h4><canvas id="proc-chart-fac"></canvas></div>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>Style-by-Style Process Status</h3></div>
+      <div class="tbl-wrap" style="max-height:400px;overflow-y:auto"><table>
+        <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>BW Total IN</th><th>BW Total OUT</th><th>BW WIP<br><small>(In Finishing)</small></th><th>In Washing</th><th>AW Total IN</th><th>AW Total OUT</th><th>AW WIP<br><small>(In Finishing)</small></th><th>Current Stage</th><th>Since</th></tr></thead>
+        <tbody id="proc-table-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- WIP SUMMARY -->
+<div id="page-wip-summary" class="page">
+  <div class="page-top"><div><h2>WIP Summary</h2><p>Current WIP across Before Wash and After Wash</p></div></div>
+  <div class="page-body">
+    <div class="filter-bar">
+      <div class="fg"><label>Process</label>
+        <select id="ws-process" onchange="renderWIPSummary()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
+      <div class="fg"><label>Factory</label>
+        <select id="ws-factory" onchange="renderWIPSummary()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Status</label>
+        <select id="ws-status" onchange="renderWIPSummary()"><option value="">All</option><option value="open">Open WIP</option><option value="cleared">Cleared</option></select></div>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>WIP by Style</h3><span id="ws-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Process</th><th>Style</th><th>Color</th><th>Factory</th><th>Product</th><th>Wash Type</th><th>Total IN</th><th>Total OUT</th><th>Current WIP</th><th>Status</th></tr></thead>
+        <tbody id="ws-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALL TRANSACTIONS -->
+<div id="page-all-tx" class="page">
+  <div class="page-top"><div><h2>All Transactions</h2><p>Complete history — Before Wash and After Wash</p></div></div>
+  <div class="page-body">
+    <div class="filter-bar">
+      <div class="fg"><label>Process</label>
+        <select id="tx-process" onchange="renderAllTx()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
+      <div class="fg"><label>From Date</label><input type="date" id="tx-from" onchange="renderAllTx()"/></div>
+      <div class="fg"><label>To Date</label><input type="date" id="tx-to" onchange="renderAllTx()"/></div>
+      <div class="fg"><label>Style</label><input type="text" id="tx-style" placeholder="Search…" oninput="renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="tx-factory" onchange="renderAllTx()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <button class="btn-clear" onclick="clearTxFilters()">Clear</button>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>Transaction Records</h3><span id="tx-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Process</th><th>#</th><th>Month</th><th>Week</th><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th></tr></thead>
+        <tbody id="tx-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- STYLE DATABASE -->
+<div id="page-style-db" class="page">
+  <div class="page-top"><div><h2>Style Database</h2><p>Style master records with Before Wash and After Wash tack types</p></div></div>
+  <div class="page-body">
+    <div id="style-alert"></div>
+    <div class="form-card">
+      <div class="form-card-hdr">Add New Style</div>
+      <div class="form-card-body">
+        <div class="field-group col3" style="margin-bottom:14px">
+          <div class="fg2"><label>Style Name *</label><input type="text" id="s-name" placeholder="e.g. 207431"/></div>
+          <div class="fg2"><label>Color *</label><input type="text" id="s-color" placeholder="e.g. WHISKEY"/></div>
+          <div class="fg2"><label>ACC</label><input type="text" id="s-acc"/></div>
+        </div>
+        <div class="field-group col5" style="margin-bottom:0">
+          <div class="fg2"><label>Factory *</label>
+            <select id="s-factory"><option value="">Select</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+          <div class="fg2"><label>Product *</label>
+            <select id="s-product"><option value="">Select</option><option>Shirt</option><option>Short</option><option>Jkt</option><option>Bls</option><option>Skirt</option><option>Frock</option></select></div>
+          <div class="fg2"><label>Wash Type</label>
+            <select id="s-wash"><option value="">Select</option><option>Denim</option><option>Gmt Dye</option><option>Pigment Dye</option><option>Normal</option></select></div>
+          <div class="fg2"><label>Tack Sample</label>
+            <select id="s-tack"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Lead Time (hrs)</label><input type="number" id="s-lead" min="0" placeholder="0"/></div>
+        </div>
+        <div class="divider"></div>
+        <div class="sub-label">Before Wash Tack Types</div>
+        <div class="tack-grid">
+          <div class="fg2"><label>Waist Tie</label><select id="t-waist-tie" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Placket Fabric Stitch</label><select id="t-placket" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Sleeve Open Fabric Stitch</label><select id="t-sleeve" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Bottom Hem Fabric Stitch</label><select id="t-bottom-hem" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Dummy Button / Loose Tack</label><select id="t-dummy" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Pocket Bag Close</label><select id="t-pocket" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Waist Tack</label><select id="t-waist-tack" onchange="calcTC('bw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+        </div>
+        <div class="tack-count-row">
+          <span>BW Tack Count (auto):</span>
+          <div class="tack-count-val" id="bw-tc-display">0</div>
+          <input type="hidden" id="bw-tc" value="0"/>
+        </div>
+        <div class="divider"></div>
+        <div class="sub-label">After Wash Tack Types</div>
+        <div class="tack-grid">
+          <div class="fg2"><label>Remove Wash Tie</label><select id="t-rm-wash-tie" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Remove Wash Tack &amp; Cleaning</label><select id="t-rm-wash-tack" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Remove Label Bag</label><select id="t-rm-label" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Loop Cutting</label><select id="t-loop" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Reinforcement Cut</label><select id="t-reinforce" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Tab &amp; Others</label><select id="t-tab" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Dummy Button Remove</label><select id="t-dummy-rm" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+          <div class="fg2"><label>Pocket Cleaning</label><select id="t-pocket-clean" onchange="calcTC('aw')"><option value="">&#8212;</option><option>Yes</option><option>No</option></select></div>
+        </div>
+        <div class="tack-count-row aw">
+          <span>AW Tack Count (auto):</span>
+          <div class="tack-count-val aw" id="aw-tc-display">0</div>
+          <input type="hidden" id="aw-tc" value="0"/>
+        </div>
+        <div class="btn-row" style="margin-top:18px">
+          <button class="btn btn-primary" onclick="addStyle()">Add Style</button>
+          <button class="btn btn-ghost" onclick="clearStyleForm()">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-hdr"><h3>Style Records</h3><span id="style-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Style Name</th><th>Color</th><th>ACC</th><th>Factory</th><th>Product</th><th>Wash Type</th><th>Tack Sample</th><th>BW Tack Count</th><th>AW Tack Count</th><th>Lead Time</th><th>Actions</th></tr></thead>
+        <tbody id="style-db-body"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// Config — loaded from localStorage or entered by user on first open
+let GITHUB_TOKEN="";
+let GITHUB_OWNER="";
+let GITHUB_REPO="";
+const GITHUB_FILE="finishing_data.xlsx";
+
+function loadConfig(){
+  GITHUB_TOKEN = localStorage.getItem("gh_token")||"";
+  GITHUB_OWNER = localStorage.getItem("gh_owner")||"";
+  GITHUB_REPO  = localStorage.getItem("gh_repo")||"";
+}
+function saveConfig(token,owner,repo){
+  localStorage.setItem("gh_token", token);
+  localStorage.setItem("gh_owner", owner);
+  localStorage.setItem("gh_repo",  repo);
+  GITHUB_TOKEN=token; GITHUB_OWNER=owner; GITHUB_REPO=repo;
+}
+function configReady(){
+  return GITHUB_TOKEN && GITHUB_OWNER && GITHUB_REPO;
+}
+
+let styles=[];
+let bwTx=[];
+let awTx=[];
+let currentFileSHA="";
+let charts={};
+let editingStyleKey=null;
+
+// ── GITHUB ──────────────────────────────────────────
+async function ghFetch(url, opts={}){
+  // Works from both file:// and http:// by always using cors mode
+  return fetch(url, {
+    ...opts,
+    mode:"cors",
+    headers:{
+      "Authorization":`token ${GITHUB_TOKEN}`,
+      "Accept":"application/vnd.github.v3+json",
+      ...(opts.headers||{})
+    }
+  });
+}
+
+async function loadFromGitHub(){
+  const url=`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+  const r=await ghFetch(url);
+  if(!r.ok) throw new Error(`GitHub error: ${r.status}`);
+  const j=await r.json();
+  currentFileSHA=j.sha;
+  const b64=j.content.replace(/[\n\r]/g,"");
+  const bin=atob(b64);
+  const arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  parseWB(XLSX.read(arr,{type:"array",cellDates:false}));
+}
+
+function parseWB(wb){
+  const cl=v=>(v===null||v===undefined||v==="None"||v==="null")?"":String(v).trim();
+  const ws1=wb.Sheets["StyleDB"];
+  if(ws1){
+    const rows=XLSX.utils.sheet_to_json(ws1,{defval:"",raw:false});
+    styles=rows.map(r=>({
+      styleKey:cl(r.StyleKey),styleName:cl(r.StyleName),color:cl(r.Color),
+      acc:cl(r.ACC),factory:cl(r.Factory),product:cl(r.Product),
+      washType:cl(r.WashType),tackSample:cl(r.TackSample),
+      stdLeadTimeHrs:cl(r.StdLeadTimeHrs),
+      bwWaistTie:cl(r.BWWaistTie),bwPlacket:cl(r.BWPlacket),
+      bwSleeve:cl(r.BWSleeve),bwBottomHem:cl(r.BWBottomHem),
+      bwDummy:cl(r.BWDummy),bwPocket:cl(r.BWPocket),
+      bwWaistTack:cl(r.BWWaistTack),bwTackCount:cl(r.BWTackCount),
+      awRmWashTie:cl(r.AWRmWashTie),awRmWashTack:cl(r.AWRmWashTack),
+      awRmLabel:cl(r.AWRmLabel),awLoop:cl(r.AWLoop),
+      awReinforce:cl(r.AWReinforce),awTab:cl(r.AWTab),
+      awDummyRm:cl(r.AWDummyRm),awPocketClean:cl(r.AWPocketClean),
+      awTackCount:cl(r.AWTackCount)
+    })).filter(s=>s.styleName&&s.styleName!=="StyleName");
+  }
+  const parseTx=(sheetName)=>{
+    const ws=wb.Sheets[sheetName];
+    if(!ws) return [];
+    return XLSX.utils.sheet_to_json(ws,{defval:"",raw:false}).map(r=>({
+      rowId:cl(r.RowID)||String(Date.now()),month:cl(r.Month),week:cl(r.Week),
+      styleKey:cl(r.StyleKey),styleName:cl(r.StyleName),color:cl(r.Color),
+      factory:cl(r.Factory),product:cl(r.Product),washType:cl(r.WashType),
+      tackSample:cl(r.TackSample),acc:cl(r.ACC),
+      inDate:cl(r.InDate),inTime:cl(r.InTime),
+      inQty:r.InQty!==""?Number(r.InQty):"",
+      outDate:cl(r.OutDate),outTime:cl(r.OutTime),
+      outQty:r.OutQty!==""?Number(r.OutQty):"",
+      wipRow:r.WIPRow!==""?Number(r.WIPRow):0,
+      cumulativeWip:r.CumulativeWIP!==""?Number(r.CumulativeWIP):0,
+      remarks:cl(r.Remarks)
+    })).filter(t=>t.styleName&&t.styleName!=="StyleName");
+  };
+  bwTx=parseTx("BeforeWashTx");
+  awTx=parseTx("AfterWashTx");
+}
+
+async function saveToGitHub(){
+  const btn=document.getElementById("sync-btn");
+  const st=document.getElementById("sync-status");
+  btn.disabled=true;btn.textContent="Saving…";st.textContent="";
+  try{
+    const wb=XLSX.utils.book_new();
+    const sRows=styles.map(s=>({
+      StyleKey:s.styleKey,StyleName:s.styleName,Color:s.color,ACC:s.acc,
+      Factory:s.factory,Product:s.product,WashType:s.washType,TackSample:s.tackSample,
+      StdLeadTimeHrs:s.stdLeadTimeHrs,
+      BWWaistTie:s.bwWaistTie,BWPlacket:s.bwPlacket,BWSleeve:s.bwSleeve,
+      BWBottomHem:s.bwBottomHem,BWDummy:s.bwDummy,BWPocket:s.bwPocket,
+      BWWaistTack:s.bwWaistTack,BWTackCount:s.bwTackCount,
+      AWRmWashTie:s.awRmWashTie,AWRmWashTack:s.awRmWashTack,AWRmLabel:s.awRmLabel,
+      AWLoop:s.awLoop,AWReinforce:s.awReinforce,AWTab:s.awTab,
+      AWDummyRm:s.awDummyRm,AWPocketClean:s.awPocketClean,AWTackCount:s.awTackCount
+    }));
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sRows),"StyleDB");
+    const txSheet=(arr,name)=>{
+      const rows=arr.map(t=>({RowID:String(t.rowId),Month:t.month,Week:t.week,
+        StyleKey:t.styleKey,StyleName:t.styleName,Color:t.color,Factory:t.factory,
+        Product:t.product,WashType:t.washType,TackSample:t.tackSample,ACC:t.acc,
+        InDate:String(t.inDate||""),InTime:String(t.inTime||""),
+        InQty:t.inQty!==""?Number(t.inQty):"",
+        OutDate:String(t.outDate||""),OutTime:String(t.outTime||""),
+        OutQty:t.outQty!==""?Number(t.outQty):"",
+        WIPRow:Number(t.wipRow||0),CumulativeWIP:Number(t.cumulativeWip||0),
+        Remarks:String(t.remarks||"")
+      }));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows,{cellDates:false}),name);
+    };
+    txSheet(bwTx,"BeforeWashTx");
+    txSheet(awTx,"AfterWashTx");
+    const b64=XLSX.write(wb,{bookType:"xlsx",type:"base64"});
+    // Always fetch latest SHA before saving to avoid conflicts
+    const shaR=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`);
+    if(!shaR.ok) throw new Error(`Could not get latest SHA: ${shaR.status}`);
+    const latestSHA=(await shaR.json()).sha;
+    const res=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:`Update ${new Date().toISOString()}`,content:b64,sha:latestSHA})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    currentFileSHA=(await res.json()).content.sha;
+    document.getElementById("last-saved").textContent=new Date().toLocaleTimeString();
+    st.style.color="#2E7D32";st.textContent="Saved successfully";
+  }catch(e){
+    st.style.color="#C62828";st.textContent="Save failed — "+e.message;console.error(e);
+  }
+  btn.disabled=false;btn.textContent="Save to GitHub";
+}
+
+// ── NAVIGATION ───────────────────────────────────────
+function showPage(page,btn){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll("#sidebar nav button").forEach(b=>b.classList.remove("active"));
+  document.getElementById("page-"+page).classList.add("active");
+  if(btn) btn.classList.add("active");
+  const map={
+    "bw-dash":renderBWDash,"aw-dash":renderAWDash,
+    "process-view":renderProcessView,"wip-summary":renderWIPSummary,
+    "all-tx":renderAllTx,"style-db":renderStyleDB,
+    "bw-entry":()=>{renderTodayEntries("bw");updateWIPPrev("bf");},
+    "aw-entry":()=>{renderTodayEntries("aw");updateWIPPrev("af");}
+  };
+  if(map[page]) map[page]();
+}
+
+// ── UTILS ────────────────────────────────────────────
+const today=()=>new Date().toISOString().split("T")[0];
+const todayDisp=()=>new Date().toLocaleDateString("en-GB",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+function weekNum(d){if(!d)return"";const dt=new Date(d),s=new Date(dt.getFullYear(),0,1);return"W"+Math.ceil(((dt-s)/86400000+s.getDay()+1)/7);}
+const monthStr=d=>d?new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";
+const sKey=(n,c)=>(n+"|||"+c).toLowerCase();
+const getStyle=(n,c)=>styles.find(s=>s.styleName.toLowerCase()===n.toLowerCase()&&s.color.toLowerCase()===c.toLowerCase());
+const wipBadge=v=>v===0?`<span class="badge bz">0 — Cleared</span>`:v<=50?`<span class="badge bl">${v}</span>`:`<span class="badge bh">${v}</span>`;
+
+function getWIPMap(txArr){
+  const map={};
+  txArr.forEach(t=>{
+    const k=sKey(t.styleName,t.color);
+    if(!map[k]) map[k]={styleName:t.styleName,color:t.color,factory:t.factory,product:t.product,washType:t.washType,acc:t.acc,totalIn:0,totalOut:0,firstDate:t.inDate||t.outDate};
+    map[k].totalIn+=(t.inQty!==""?Number(t.inQty):0);
+    map[k].totalOut+=(t.outQty!==""?Number(t.outQty):0);
+    if(t.inDate&&(!map[k].firstDate||t.inDate<map[k].firstDate)) map[k].firstDate=t.inDate;
+  });
+  return Object.values(map).map(m=>({...m,wip:m.totalIn-m.totalOut}));
+}
+
+function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId){
+  const range=document.getElementById(rangeId).value;
+  const factory=document.getElementById(facId).value;
+  const product=document.getElementById(prodId).value;
+  const wash=document.getElementById(washId).value;
+  const t=today();
+  let from="",to=t;
+  if(range==="today"){from=t;}
+  else if(range==="week"){const d=new Date();d.setDate(d.getDate()-d.getDay()+1);from=d.toISOString().split("T")[0];}
+  else if(range==="month"){from=t.slice(0,7)+"-01";}
+  else if(range==="custom"){
+    from=document.getElementById(fromId).value;
+    to=document.getElementById(toId).value||t;
+  }
+  return txArr.filter(tx=>{
+    const d=tx.inDate||tx.outDate;
+    if(from&&d<from)return false;
+    if(range!=="all"&&range!=="custom"&&d>to)return false;
+    if(range==="custom"&&to&&d>to)return false;
+    if(factory&&tx.factory!==factory)return false;
+    if(product&&tx.product!==product)return false;
+    if(wash&&tx.washType!==wash)return false;
+    return true;
+  });
+}
+
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML=`<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>{el.innerHTML="";},4000);
+}
+
+function makeChart(id,type,data,extraOpts){
+  if(charts[id]) charts[id].destroy();
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  const scalesOpt=(type==="bar"||type==="line")?{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:"#f0f4f8"},ticks:{font:{size:10}}}}:undefined;
+  charts[id]=new Chart(ctx,{type,data,options:{responsive:true,plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:10}}},scales:scalesOpt,...(extraOpts||{})}});
+}
+
+function setEl(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+
+function renderDashCommon(p,txArr,filteredTx){
+  // p = "bk" for BW, "ak" for AW — matches HTML IDs directly
+  const isBW=p==="bk";
+  const chartPfx=isBW?"bw":"aw";
+  const inColor=isBW?"#2E75B6":"#6A1B9A";
+  const outColor=isBW?"#2E7D32":"#00695C";
+
+  const allWIP=getWIPMap(txArr);
+  const totalIn=filteredTx.reduce((a,t)=>a+(t.inQty||0),0);
+  const totalOut=filteredTx.reduce((a,t)=>a+(t.outQty||0),0);
+  const openWIP=allWIP.filter(w=>w.wip>0);
+  const cleared=allWIP.filter(w=>w.wip===0&&(w.totalIn>0||w.totalOut>0));
+  setEl(`${p}-in`,totalIn);
+  setEl(`${p}-out`,totalOut);
+  setEl(`${p}-wip`,allWIP.reduce((a,w)=>a+Math.max(0,w.wip),0));
+  setEl(`${p}-open`,openWIP.length);
+  setEl(`${p}-entries`,filteredTx.length);
+  setEl(`${p}-cleared`,cleared.length);
+  const sorted=[...allWIP].sort((a,b)=>b.wip-a.wip);
+  const topS=sorted[0];
+  setEl(`${p}-top-style`,topS?topS.styleName:"—");
+  setEl(`${p}-top-style-sub`,topS?`WIP: ${topS.wip} | ${topS.color}`:"");
+  const facMap={};allWIP.forEach(w=>{facMap[w.factory]=(facMap[w.factory]||0)+w.wip;});
+  const topF=Object.entries(facMap).sort((a,b)=>b[1]-a[1])[0];
+  setEl(`${p}-top-fac`,topF?topF[0]:"—");
+  setEl(`${p}-top-fac-sub`,topF?`Total WIP: ${topF[1]}`:"");
+
+  const days=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split("T")[0]);}
+  const dIn=days.map(d=>txArr.filter(t=>t.inDate===d).reduce((a,t)=>a+(t.inQty||0),0));
+  const dOut=days.map(d=>txArr.filter(t=>t.outDate===d).reduce((a,t)=>a+(t.outQty||0),0));
+  const labs=days.map(d=>new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short"}));
+  makeChart(`${chartPfx}-chart-daily`,"bar",{labels:labs,datasets:[{label:"IN",data:dIn,backgroundColor:inColor,borderRadius:4},{label:"OUT",data:dOut,backgroundColor:outColor,borderRadius:4}]});
+
+  const factories=["SGL","BDD","KGG","KG2","SFC KD"];
+  const facWips=factories.map(f=>allWIP.filter(w=>w.factory===f).reduce((a,w)=>a+Math.max(0,w.wip),0));
+  makeChart(`${chartPfx}-chart-factory`,"bar",{labels:factories,datasets:[{label:"Current WIP",data:facWips,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2"],borderRadius:4}]},{indexAxis:"y"});
+
+  const t30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);t30.push(d.toISOString().split("T")[0]);}
+  let run=0;
+  const trendData=t30.map(d=>{
+    run+=txArr.filter(t=>t.inDate===d).reduce((a,t)=>a+(t.inQty||0),0);
+    run-=txArr.filter(t=>t.outDate===d).reduce((a,t)=>a+(t.outQty||0),0);
+    return Math.max(0,run);
+  });
+  makeChart(`${chartPfx}-chart-trend`,"line",{labels:t30.map(d=>new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short"})),datasets:[{label:"Total WIP",data:trendData,borderColor:inColor,backgroundColor:inColor+"22",tension:.3,fill:true,pointRadius:2}]});
+
+  // Donut chart — top 5 for visibility, rest as Others
+  const top5s=sorted.filter(w=>w.wip>0).slice(0,5);
+  const othersW=sorted.filter(w=>w.wip>0).slice(5).reduce((a,w)=>a+w.wip,0);
+  const dLabels=top5s.map(w=>w.styleName+(w.color?` (${w.color})`:""));
+  const dData=top5s.map(w=>w.wip);
+  if(othersW>0){dLabels.push("Others");dData.push(othersW);}
+  makeChart(`${chartPfx}-chart-donut`,"doughnut",{labels:dLabels,datasets:[{data:dData,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2","#546E7A"],borderWidth:2}]});
+
+  const products=["Shirt","Short","Jkt","Bls","Skirt","Frock"];
+  const prodWips=products.map(pr=>allWIP.filter(w=>w.product===pr).reduce((a,w)=>a+Math.max(0,w.wip),0));
+  makeChart(`${chartPfx}-chart-product`,"bar",{labels:products,datasets:[{label:"WIP",data:prodWips,backgroundColor:inColor,borderRadius:4}]});
+
+  // All styles table sorted descending by WIP — with In Washing column
+  const bwWIPMap=getWIPMap(bwTx);
+  const tbody=document.getElementById(`${chartPfx}-top5`);
+  if(tbody){
+    const allSorted=[...allWIP].sort((a,b)=>b.wip-a.wip);
+    tbody.innerHTML=allSorted.length?allSorted.map((w,i)=>{
+      // In Washing = BW OUT - AW IN for this style+color
+      const bwEntry=bwWIPMap.find(b=>b.styleName.toLowerCase()===w.styleName.toLowerCase()&&b.color.toLowerCase()===w.color.toLowerCase());
+      const awWIPMap=getWIPMap(awTx);
+      const awEntry=awWIPMap.find(a=>a.styleName.toLowerCase()===w.styleName.toLowerCase()&&a.color.toLowerCase()===w.color.toLowerCase());
+      const inWashing=Math.max(0,(bwEntry?bwEntry.totalOut:0)-(awEntry?awEntry.totalIn:0));
+      return`<tr><td><span class="rank-num">${i+1}</span></td><td><strong>${w.styleName}</strong></td><td>${w.color}</td><td>${w.factory}</td><td>${w.totalIn}</td><td>${w.totalOut}</td><td>${wipBadge(w.wip)}</td><td>${inWashing>0?`<span class="badge bl">${inWashing}</span>`:`<span class="badge bz">0</span>`}</td><td>${w.firstDate||"—"}</td></tr>`;
+    }).join(""):`<tr><td colspan="9" class="no-data">No data yet.</td></tr>`;
+  }
+}
+
+function renderBWDash(){
+  setEl("bw-dash-date",todayDisp());
+  const ftx=filterTx(bwTx,"bdf-range","bdf-from","bdf-to","bdf-factory","bdf-product","bdf-wash");
+  renderDashCommon("bk",bwTx,ftx);
+}
+function onBWFilterChange(){
+  const v=document.getElementById("bdf-range").value;
+  document.getElementById("bdf-cw1").style.display=v==="custom"?"flex":"none";
+  document.getElementById("bdf-cw2").style.display=v==="custom"?"flex":"none";
+  renderBWDash();
+}
+function clearBWFilters(){
+  ["bdf-range","bdf-factory","bdf-product","bdf-wash"].forEach(id=>{document.getElementById(id).value=id==="bdf-range"?"all":"";});
+  document.getElementById("bdf-cw1").style.display="none";
+  document.getElementById("bdf-cw2").style.display="none";
+  renderBWDash();
+}
+
+function renderAWDash(){
+  document.getElementById("aw-dash-date").textContent=todayDisp();
+  const ftx=filterTx(awTx,"adf-range","adf-from","adf-to","adf-factory","adf-product","adf-wash");
+  renderDashCommon("ak",awTx,ftx);
+}
+function onAWFilterChange(){
+  const v=document.getElementById("adf-range").value;
+  document.getElementById("adf-cw1").style.display=v==="custom"?"flex":"none";
+  document.getElementById("adf-cw2").style.display=v==="custom"?"flex":"none";
+  renderAWDash();
+}
+function clearAWFilters(){
+  ["adf-range","adf-factory","adf-product","adf-wash"].forEach(id=>{document.getElementById(id).value=id==="adf-range"?"all":"";});
+  document.getElementById("adf-cw1").style.display="none";
+  document.getElementById("adf-cw2").style.display="none";
+  renderAWDash();
+}
+
+// ── PROCESS VIEW ──────────────────────────────────────
+function renderProcessView(){
+  const bwMap=getWIPMap(bwTx);
+  const awMap=getWIPMap(awTx);
+  const bwTotalWIP=bwMap.reduce((a,w)=>a+Math.max(0,w.wip),0);
+  const awTotalWIP=awMap.reduce((a,w)=>a+Math.max(0,w.wip),0);
+  // In washing = qty sent by BW but not yet received in AW
+  const allKeys=[...new Set([...bwMap.map(w=>sKey(w.styleName,w.color)),...awMap.map(w=>sKey(w.styleName,w.color))])];
+  let inWashing=0;
+  allKeys.forEach(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k);
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k);
+    const bwOut=bw?bw.totalOut:0;
+    const awIn=aw?aw.totalIn:0;
+    inWashing+=Math.max(0,bwOut-awIn);
+  });
+  document.getElementById("proc-bw-wip").textContent=bwTotalWIP;
+  document.getElementById("proc-wash-wip").textContent=inWashing;
+  document.getElementById("proc-aw-wip").textContent=awTotalWIP;
+
+  const allStyles=new Set([...bwMap.map(w=>sKey(w.styleName,w.color)),...awMap.map(w=>sKey(w.styleName,w.color))]);
+  document.getElementById("proc-total-styles").textContent=allStyles.size;
+  let fullyCleared=0;
+  allStyles.forEach(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k);
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k);
+    if((!bw||bw.wip===0)&&(!aw||aw.wip===0)) fullyCleared++;
+  });
+  document.getElementById("proc-cleared").textContent=fullyCleared;
+
+  // Oldest pending
+  const pending=[...bwMap.filter(w=>w.wip>0),...awMap.filter(w=>w.wip>0)].sort((a,b)=>(a.firstDate||"z")>(b.firstDate||"z")?1:-1);
+  document.getElementById("proc-oldest").textContent=pending[0]?`${pending[0].styleName} (${pending[0].firstDate})`:"—";
+
+  // Top factory total WIP
+  const allFacMap={};
+  [...bwMap,...awMap].forEach(w=>{allFacMap[w.factory]=(allFacMap[w.factory]||0)+Math.max(0,w.wip);});
+  const topF=Object.entries(allFacMap).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById("proc-top-fac").textContent=topF?`${topF[0]} (${topF[1]})`:"—";
+
+  // Stage chart
+  makeChart("proc-chart-stage","bar",{
+    labels:["BW WIP (Finishing)","In Washing Dept","AW WIP (Finishing)"],
+    datasets:[{label:"WIP Quantity",data:[bwTotalWIP,inWashing,awTotalWIP],backgroundColor:["#2E75B6","#6A1B9A","#00695C"],borderRadius:6}]
+  });
+
+  // Factory chart
+  const factories=["SGL","BDD","KGG","KG2","SFC KD"];
+  const facTotals=factories.map(f=>allFacMap[f]||0);
+  makeChart("proc-chart-fac","bar",{labels:factories,datasets:[{label:"Total WIP",data:facTotals,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2"],borderRadius:4}]});
+
+  // Table
+  const tbody=document.getElementById("proc-table-body");
+  const rows=[];
+  allStyles.forEach(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k)||{styleName:"",color:"",factory:"",totalIn:0,totalOut:0,wip:0,firstDate:""};
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k)||{totalIn:0,totalOut:0,wip:0};
+    const name=bw.styleName||aw.styleName||k;
+    const color=bw.color||aw.color||"";
+    const factory=bw.factory||aw.factory||"";
+    let stage="—";
+    if(bw.wip>0) stage=`<span style="color:var(--blue);font-weight:600">BW WIP — In Finishing</span>`;
+    else if(Math.max(0,(bw.totalOut||0)-(aw.totalIn||0))>0) stage=`<span style="color:var(--purple);font-weight:600">In Washing Dept</span>`;
+    else if(aw.wip>0) stage=`<span style="color:var(--teal);font-weight:600">AW WIP — In Finishing</span>`;
+    else stage=`<span style="color:var(--green);font-weight:600">Fully Cleared — Back to Factory</span>`;
+    const inWash=Math.max(0,(bw.totalOut||0)-(aw.totalIn||0));
+    const inWashBadge=inWash>0?`<span class="badge bl">${inWash}</span>`:`<span class="badge bz">0</span>`;
+    rows.push(`<tr><td><strong>${name}</strong></td><td>${color}</td><td>${factory}</td><td>${bw.totalIn}</td><td>${bw.totalOut}</td><td>${wipBadge(bw.wip)}</td><td>${inWashBadge}</td><td>${aw.totalIn}</td><td>${aw.totalOut}</td><td>${wipBadge(aw.wip)}</td><td>${stage}</td><td>${bw.firstDate||"—"}</td></tr>`);
+  });
+  tbody.innerHTML=rows.length?rows.join(""):`<tr><td colspan="11" class="no-data">No data available.</td></tr>`;
+}
+
+// ── WIP SUMMARY ────────────────────────────────────────
+function renderWIPSummary(){
+  const proc=document.getElementById("ws-process").value;
+  const fac=document.getElementById("ws-factory").value;
+  const stat=document.getElementById("ws-status").value;
+  let data=[];
+  if(proc==="both"||proc==="bw") getWIPMap(bwTx).forEach(w=>data.push({...w,process:"Before Wash"}));
+  if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
+  if(fac) data=data.filter(d=>d.factory===fac);
+  if(stat==="open") data=data.filter(d=>d.wip>0);
+  if(stat==="cleared") data=data.filter(d=>d.wip===0&&(d.totalIn>0||d.totalOut>0));
+  data.sort((a,b)=>b.wip-a.wip);
+  document.getElementById("ws-count").textContent=`${data.length} records`;
+  const tbody=document.getElementById("ws-body");
+  tbody.innerHTML=data.length?data.map(d=>`<tr>
+    <td><span class="badge" style="background:${d.process==="Before Wash"?"var(--lblue)":"var(--lpurple)"};color:${d.process==="Before Wash"?"var(--blue)":"var(--purple)"}">${d.process}</span></td>
+    <td><strong>${d.styleName}</strong></td><td>${d.color}</td><td>${d.factory}</td><td>${d.product}</td><td>${d.washType||"—"}</td>
+    <td>${d.totalIn}</td><td>${d.totalOut}</td><td>${wipBadge(d.wip)}</td>
+    <td>${d.wip===0?'<span style="color:var(--green);font-weight:600">Cleared</span>':'<span style="color:var(--orange);font-weight:600">Pending</span>'}</td>
+  </tr>`).join(""):`<tr><td colspan="10" class="no-data">No records found.</td></tr>`;
+}
+
+// ── ALL TRANSACTIONS ────────────────────────────────────
+function renderAllTx(){
+  const proc=document.getElementById("tx-process").value;
+  const from=document.getElementById("tx-from").value;
+  const to=document.getElementById("tx-to").value;
+  const style=document.getElementById("tx-style").value.toLowerCase();
+  const fac=document.getElementById("tx-factory").value;
+  let data=[];
+  if(proc==="both"||proc==="bw") bwTx.forEach(t=>data.push({...t,process:"BW"}));
+  if(proc==="both"||proc==="aw") awTx.forEach(t=>data.push({...t,process:"AW"}));
+  if(from) data=data.filter(t=>(t.inDate||t.outDate)>=from);
+  if(to)   data=data.filter(t=>(t.inDate||t.outDate)<=to);
+  if(style) data=data.filter(t=>t.styleName.toLowerCase().includes(style));
+  if(fac) data=data.filter(t=>t.factory===fac);
+  document.getElementById("tx-count").textContent=`Showing ${data.length} records`;
+  const tbody=document.getElementById("tx-body");
+  tbody.innerHTML=data.length?data.map((t,i)=>`<tr>
+    <td><span class="badge" style="background:${t.process==="BW"?"var(--lblue)":"var(--lpurple)"};color:${t.process==="BW"?"var(--blue)":"var(--purple)"}">${t.process}</span></td>
+    <td>${i+1}</td><td>${t.month}</td><td>${t.week}</td><td><strong>${t.styleName}</strong></td><td>${t.color}</td><td>${t.factory}</td>
+    <td>${t.inDate||"—"}</td><td>${t.inTime||"—"}</td><td>${t.inQty!==""?t.inQty:"—"}</td>
+    <td>${t.outDate||"—"}</td><td>${t.outTime||"—"}</td><td>${t.outQty!==""?t.outQty:"—"}</td>
+    <td>${wipBadge(t.wipRow)}</td><td>${wipBadge(t.cumulativeWip)}</td><td>${t.remarks||"—"}</td>
+  </tr>`).join(""):`<tr><td colspan="16" class="no-data">No records found.</td></tr>`;
+}
+function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-factory"].forEach(id=>{document.getElementById(id).value=id==="tx-process"?"both":"";});renderAllTx();}
+
+// ── AUTOCOMPLETE ─────────────────────────────────────
+function styleAC(val,prefix){
+  const list=document.getElementById(`${prefix}-ac`);
+  document.getElementById(`${prefix}-color`).innerHTML='<option value="">— Select Color —</option>';
+  clearAF(prefix);
+  if(!val){list.style.display="none";return;}
+  const matches=[...new Set(styles.filter(s=>s.styleName.toLowerCase().includes(val.toLowerCase())).map(s=>s.styleName))];
+  if(!matches.length){list.style.display="none";return;}
+  list.innerHTML=matches.map(m=>{
+    const cnt=styles.filter(s=>s.styleName.toLowerCase()===m.toLowerCase()).length;
+    return`<div onclick="selectStyle('${m.replace(/'/g,"\\'")}','${prefix}')">${m}<small>${cnt} color${cnt>1?"s":""}</small></div>`;
+  }).join("");
+  list.style.display="block";
+}
+function selectStyle(name,prefix){
+  document.getElementById(`${prefix}-style`).value=name;
+  document.getElementById(`${prefix}-ac`).style.display="none";
+  const colors=styles.filter(s=>s.styleName.toLowerCase()===name.toLowerCase()).map(s=>s.color);
+  const sel=document.getElementById(`${prefix}-color`);
+  sel.innerHTML='<option value="">— Select Color —</option>'+colors.map(c=>`<option value="${c}">${c}</option>`).join("");
+  clearAF(prefix);
+  if(colors.length===1){sel.value=colors[0];onColorSel(prefix);}
+}
+function onColorSel(prefix){
+  const name=document.getElementById(`${prefix}-style`).value;
+  const color=document.getElementById(`${prefix}-color`).value;
+  const s=getStyle(name,color);
+  const afPrefix=prefix==="bf"?"bf-af":prefix==="af"?"af-af":prefix+"-af";
+  if(s){
+    document.getElementById(`${afPrefix}-factory`).textContent=s.factory||"—";
+    document.getElementById(`${afPrefix}-product`).textContent=s.product||"—";
+    document.getElementById(`${afPrefix}-wash`).textContent=s.washType||"—";
+    document.getElementById(`${afPrefix}-tack`).textContent=s.tackSample||"—";
+    document.getElementById(`${afPrefix}-acc`).textContent=s.acc||"—";
+  } else {clearAF(prefix);}
+  updateWIPPrev(prefix);
+}
+function clearAF(prefix){
+  const afPrefix=prefix==="bf"?"bf-af":prefix==="af"?"af-af":prefix+"-af";
+  ["factory","product","wash","tack","acc"].forEach(f=>{
+    const el=document.getElementById(`${afPrefix}-${f}`);
+    if(el) el.textContent="—";
+  });
+}
+function updateWIPPrev(prefix){
+  const inQ=Number(document.getElementById(`${prefix}-in-qty`).value)||0;
+  const outQ=Number(document.getElementById(`${prefix}-out-qty`).value)||0;
+  const name=document.getElementById(`${prefix}-style`).value;
+  const color=document.getElementById(`${prefix}-color`).value;
+  const wpPrefix=prefix==="bf"?"bf":"af";
+  const rowWip=(inQ||outQ)?inQ-outQ:null;
+  document.getElementById(`${wpPrefix}-wp-style`).textContent=(name&&color)?`${name} / ${color}`:"—";
+  document.getElementById(`${wpPrefix}-wp-row`).textContent=rowWip!==null?rowWip:"—";
+  if(name&&color){
+    const txArr=prefix==="bf"?bwTx:awTx;
+    const wmap=getWIPMap(txArr);
+    const ex=wmap.find(w=>w.styleName.toLowerCase()===name.toLowerCase()&&w.color.toLowerCase()===color.toLowerCase());
+    document.getElementById(`${wpPrefix}-wp-cum`).textContent=(ex?ex.wip:0)+(rowWip||0);
+  } else {document.getElementById(`${wpPrefix}-wp-cum`).textContent="—";}
+}
+document.addEventListener("input",e=>{
+  if(["bf-in-qty","bf-out-qty"].includes(e.target.id)) updateWIPPrev("bf");
+  if(["af-in-qty","af-out-qty"].includes(e.target.id)) updateWIPPrev("af");
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".ac-wrap")){
+    document.querySelectorAll(".ac-list").forEach(l=>l.style.display="none");
+  }
+});
+
+// ── ENTRY ─────────────────────────────────────────────
+function addEntry(process){
+  const prefix=process==="bw"?"bf":"af";
+  const styleName=document.getElementById(`${prefix}-style`).value.trim();
+  const color=document.getElementById(`${prefix}-color`).value;
+  const inDate=document.getElementById(`${prefix}-in-date`).value;
+  const inTime=document.getElementById(`${prefix}-in-time`).value;
+  const inQty=document.getElementById(`${prefix}-in-qty`).value;
+  const outDate=document.getElementById(`${prefix}-out-date`).value;
+  const outTime=document.getElementById(`${prefix}-out-time`).value;
+  const outQty=document.getElementById(`${prefix}-out-qty`).value;
+  const remarks=document.getElementById(`${prefix}-remarks`).value;
+  const alertId=`${process}-entry-alert`;
+  if(!styleName||!color){showAlert(alertId,"Please select a Style Name and Color.","warn");return;}
+  if(!inQty&&!outQty){showAlert(alertId,"Please enter at least IN Quantity or OUT Quantity.","warn");return;}
+  const s=getStyle(styleName,color);
+  if(!s){showAlert(alertId,"Style not found in database. Please add it first.","error");return;}
+  const rowWip=(inQty!==""?Number(inQty):0)-(outQty!==""?Number(outQty):0);
+  const newTx={
+    rowId:Date.now().toString(),month:monthStr(inDate||outDate),week:weekNum(inDate||outDate),
+    styleKey:sKey(styleName,color),styleName,color,
+    factory:s.factory,product:s.product,washType:s.washType,tackSample:s.tackSample,acc:s.acc,
+    inDate,inTime,inQty:inQty!==""?Number(inQty):"",
+    outDate,outTime,outQty:outQty!==""?Number(outQty):"",
+    wipRow:rowWip,cumulativeWip:0,remarks
+  };
+  if(process==="bw") bwTx.push(newTx); else awTx.push(newTx);
+  recalcCumulative(process,styleName,color);
+  showAlert(alertId,"Entry added. Remember to save to GitHub.","success");
+  clearEntryForm(prefix);
+  renderTodayEntries(process);
+}
+function recalcCumulative(process,styleName,color){
+  const arr=process==="bw"?bwTx:awTx;
+  let run=0;
+  arr.forEach(t=>{
+    if(t.styleName.toLowerCase()===styleName.toLowerCase()&&t.color.toLowerCase()===color.toLowerCase()){
+      run+=(t.inQty!==""?Number(t.inQty):0);
+      run-=(t.outQty!==""?Number(t.outQty):0);
+      t.cumulativeWip=run;
+    }
+  });
+}
+function deleteEntry(process,rowId){
+  if(!confirm("Delete this entry?"))return;
+  if(process==="bw"){
+    const tx=bwTx.find(t=>t.rowId===rowId);
+    bwTx=bwTx.filter(t=>t.rowId!==rowId);
+    if(tx) recalcCumulative("bw",tx.styleName,tx.color);
+  } else {
+    const tx=awTx.find(t=>t.rowId===rowId);
+    awTx=awTx.filter(t=>t.rowId!==rowId);
+    if(tx) recalcCumulative("aw",tx.styleName,tx.color);
+  }
+  renderTodayEntries(process);
+}
+function renderTodayEntries(process){
+  const t=today();
+  const arr=process==="bw"?bwTx:awTx;
+  const todayTx=arr.filter(tx=>tx.inDate===t||tx.outDate===t);
+  const cntEl=document.getElementById(`${process}-today-count`);
+  if(cntEl) cntEl.textContent=`${todayTx.length} record${todayTx.length!==1?"s":""}`;
+  const tbody=document.getElementById(`${process}-today-body`);
+  if(!tbody)return;
+  tbody.innerHTML=todayTx.length?todayTx.map(tx=>`<tr>
+    <td><strong>${tx.styleName}</strong></td><td>${tx.color}</td><td>${tx.factory}</td>
+    <td>${tx.inDate||"—"}</td><td>${tx.inTime||"—"}</td><td>${tx.inQty!==""?tx.inQty:"—"}</td>
+    <td>${tx.outDate||"—"}</td><td>${tx.outTime||"—"}</td><td>${tx.outQty!==""?tx.outQty:"—"}</td>
+    <td>${wipBadge(tx.wipRow)}</td><td>${wipBadge(tx.cumulativeWip)}</td>
+    <td>${tx.remarks||"—"}</td>
+    <td style="display:flex;gap:5px">
+      <button class="btn-edit" onclick="openEditEntry('${process}','${tx.rowId}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEntry('${process}','${tx.rowId}')">Delete</button>
+    </td>
+  </tr>`).join(""):`<tr><td colspan="13" class="no-data">No entries for today.</td></tr>`;
+}
+function clearEntryForm(prefix){
+  [`${prefix}-style`,`${prefix}-in-date`,`${prefix}-in-time`,`${prefix}-in-qty`,
+   `${prefix}-out-date`,`${prefix}-out-time`,`${prefix}-out-qty`,`${prefix}-remarks`]
+  .forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const colorSel=document.getElementById(`${prefix}-color`);
+  if(colorSel) colorSel.innerHTML='<option value="">— Select Color —</option>';
+  clearAF(prefix);
+  const wpPrefix=prefix==="bf"?"bf":"af";
+  [`${wpPrefix}-wp-style`,`${wpPrefix}-wp-row`,`${wpPrefix}-wp-cum`].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent="—";
+  });
+}
+
+// ── TACK COUNT ────────────────────────────────────────
+function calcTC(type){
+  if(type==="bw"){
+    const ids=["t-waist-tie","t-placket","t-sleeve","t-bottom-hem","t-dummy","t-pocket","t-waist-tack"];
+    const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
+    document.getElementById("bw-tc-display").textContent=cnt;
+    document.getElementById("bw-tc").value=cnt;
+  } else {
+    const ids=["t-rm-wash-tie","t-rm-wash-tack","t-rm-label","t-loop","t-reinforce","t-tab","t-dummy-rm","t-pocket-clean"];
+    const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
+    document.getElementById("aw-tc-display").textContent=cnt;
+    document.getElementById("aw-tc").value=cnt;
+  }
+}
+function calcModalTC(){
+  const ids=["m-rm-wash-tie","m-rm-wash-tack","m-rm-label","m-loop","m-reinforce","m-tab","m-dummy-rm","m-pocket-clean"];
+  const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
+  document.getElementById("modal-tack-count-display").textContent=cnt;
+  document.getElementById("modal-tack-count").value=cnt;
+}
+
+// ── STYLE DATABASE ────────────────────────────────────
+function addStyle(){
+  const name=document.getElementById("s-name").value.trim();
+  const color=document.getElementById("s-color").value.trim().toUpperCase();
+  const factory=document.getElementById("s-factory").value;
+  const product=document.getElementById("s-product").value;
+  if(!name||!color){showAlert("style-alert","Style Name and Color are required.","warn");return;}
+  if(!factory||!product){showAlert("style-alert","Factory and Product are required.","warn");return;}
+  if(getStyle(name,color)){showAlert("style-alert","This Style + Color already exists.","warn");return;}
+  styles.push({
+    styleKey:sKey(name,color),styleName:name,color,
+    acc:document.getElementById("s-acc").value,
+    factory,product,
+    washType:document.getElementById("s-wash").value,
+    tackSample:document.getElementById("s-tack").value,
+    stdLeadTimeHrs:document.getElementById("s-lead").value,
+    bwWaistTie:document.getElementById("t-waist-tie").value,
+    bwPlacket:document.getElementById("t-placket").value,
+    bwSleeve:document.getElementById("t-sleeve").value,
+    bwBottomHem:document.getElementById("t-bottom-hem").value,
+    bwDummy:document.getElementById("t-dummy").value,
+    bwPocket:document.getElementById("t-pocket").value,
+    bwWaistTack:document.getElementById("t-waist-tack").value,
+    bwTackCount:document.getElementById("bw-tc").value,
+    awRmWashTie:document.getElementById("t-rm-wash-tie").value,
+    awRmWashTack:document.getElementById("t-rm-wash-tack").value,
+    awRmLabel:document.getElementById("t-rm-label").value,
+    awLoop:document.getElementById("t-loop").value,
+    awReinforce:document.getElementById("t-reinforce").value,
+    awTab:document.getElementById("t-tab").value,
+    awDummyRm:document.getElementById("t-dummy-rm").value,
+    awPocketClean:document.getElementById("t-pocket-clean").value,
+    awTackCount:document.getElementById("aw-tc").value
+  });
+  showAlert("style-alert","Style added. Remember to save to GitHub.","success");
+  clearStyleForm();renderStyleDB();
+}
+function deleteStyle(key){
+  if(!confirm("Delete this style?"))return;
+  styles=styles.filter(s=>s.styleKey!==key);renderStyleDB();
+}
+function renderStyleDB(){
+  document.getElementById("style-count").textContent=`${styles.length} style${styles.length!==1?"s":""}`;
+  const tbody=document.getElementById("style-db-body");
+  tbody.innerHTML=styles.length?styles.map(s=>`<tr>
+    <td><strong>${s.styleName}</strong></td><td>${s.color}</td><td>${s.acc||"—"}</td>
+    <td>${s.factory}</td><td>${s.product}</td><td>${s.washType||"—"}</td>
+    <td>${s.tackSample||"—"}</td><td>${s.bwTackCount||"0"}</td><td>${s.awTackCount||"0"}</td>
+    <td>${s.stdLeadTimeHrs||"—"} hrs</td>
+    <td style="display:flex;gap:6px">
+      <button class="btn-edit" onclick="openEditModal('${s.styleKey}')">Edit AW Tacks</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteStyle('${s.styleKey}')">Delete</button>
+    </td>
+  </tr>`).join(""):`<tr><td colspan="11" class="no-data">No styles added yet.</td></tr>`;
+}
+function clearStyleForm(){
+  ["s-name","s-color","s-acc","s-factory","s-product","s-wash","s-tack","s-lead",
+   "t-waist-tie","t-placket","t-sleeve","t-bottom-hem","t-dummy","t-pocket","t-waist-tack",
+   "t-rm-wash-tie","t-rm-wash-tack","t-rm-label","t-loop","t-reinforce","t-tab","t-dummy-rm","t-pocket-clean"]
+  .forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("bw-tc-display").textContent="0";document.getElementById("bw-tc").value="0";
+  document.getElementById("aw-tc-display").textContent="0";document.getElementById("aw-tc").value="0";
+}
+
+// ── EDIT MODAL ────────────────────────────────────────
+function openEditModal(key){
+  const s=styles.find(st=>st.styleKey===key);
+  if(!s)return;
+  editingStyleKey=key;
+  // Style info
+  document.getElementById("modal-style-info").innerHTML=
+    `<div class="af-item"><div class="af-lbl">Style</div><div class="af-val">${s.styleName}</div></div>
+     <div class="af-item"><div class="af-lbl">Color</div><div class="af-val">${s.color}</div></div>
+     <div class="af-item"><div class="af-lbl">Factory</div><div class="af-val">${s.factory}</div></div>
+     <div class="af-item"><div class="af-lbl">Product</div><div class="af-val">${s.product}</div></div>`;
+  // AW tack fields
+  const awFields=[
+    {id:"m-rm-wash-tie",label:"Remove Wash Tie",val:s.awRmWashTie},
+    {id:"m-rm-wash-tack",label:"Remove Wash Tack & Cleaning",val:s.awRmWashTack},
+    {id:"m-rm-label",label:"Remove Label Bag",val:s.awRmLabel},
+    {id:"m-loop",label:"Loop Cutting",val:s.awLoop},
+    {id:"m-reinforce",label:"Reinforcement Cut",val:s.awReinforce},
+    {id:"m-tab",label:"Tab & Others",val:s.awTab},
+    {id:"m-dummy-rm",label:"Dummy Button Remove",val:s.awDummyRm},
+    {id:"m-pocket-clean",label:"Pocket Cleaning",val:s.awPocketClean}
+  ];
+  document.getElementById("modal-tack-grid").innerHTML=awFields.map(f=>`
+    <div class="fg2">
+      <label>${f.label}</label>
+      <select id="${f.id}" onchange="calcModalTC()">
+        <option value="">—</option>
+        <option value="Yes"${f.val==="Yes"?" selected":""}>Yes</option>
+        <option value="No"${f.val==="No"?" selected":""}>No</option>
+      </select>
+    </div>`).join("");
+  // Update count display
+  const cnt=awFields.filter(f=>f.val==="Yes").length;
+  document.getElementById("modal-tack-count-display").textContent=cnt;
+  document.getElementById("modal-tack-count").value=cnt;
+  document.getElementById("edit-modal").style.display="flex";
+}
+function closeEditModal(){document.getElementById("edit-modal").style.display="none";editingStyleKey=null;}
+function saveEditModal(){
+  if(!editingStyleKey)return;
+  const s=styles.find(st=>st.styleKey===editingStyleKey);
+  if(!s)return;
+  s.awRmWashTie=document.getElementById("m-rm-wash-tie").value;
+  s.awRmWashTack=document.getElementById("m-rm-wash-tack").value;
+  s.awRmLabel=document.getElementById("m-rm-label").value;
+  s.awLoop=document.getElementById("m-loop").value;
+  s.awReinforce=document.getElementById("m-reinforce").value;
+  s.awTab=document.getElementById("m-tab").value;
+  s.awDummyRm=document.getElementById("m-dummy-rm").value;
+  s.awPocketClean=document.getElementById("m-pocket-clean").value;
+  s.awTackCount=document.getElementById("modal-tack-count").value;
+  closeEditModal();
+  showAlert("style-alert","After Wash tack types updated. Remember to save to GitHub.","success");
+  renderStyleDB();
+}
+
+// ── EDIT ENTRY ───────────────────────────────────────
+let editEntryProcess=null;
+let editEntryRowId=null;
+
+function openEditEntry(process,rowId){
+  const arr=process==="bw"?bwTx:awTx;
+  const tx=arr.find(t=>t.rowId===rowId);
+  if(!tx)return;
+  editEntryProcess=process;
+  editEntryRowId=rowId;
+  document.getElementById("edit-entry-title").textContent=
+    `Edit Entry — ${process==="bw"?"Before Wash":"After Wash"}`;
+  document.getElementById("edit-entry-info").innerHTML=`
+    <div class="af-item"><div class="af-lbl">Style</div><div class="af-val">${tx.styleName}</div></div>
+    <div class="af-item"><div class="af-lbl">Color</div><div class="af-val">${tx.color}</div></div>
+    <div class="af-item"><div class="af-lbl">Factory</div><div class="af-val">${tx.factory}</div></div>
+    <div class="af-item"><div class="af-lbl">Current Row WIP</div><div class="af-val">${tx.wipRow}</div></div>`;
+  document.getElementById("ee-in-date").value=tx.inDate||"";
+  document.getElementById("ee-in-time").value=tx.inTime||"";
+  document.getElementById("ee-in-qty").value=tx.inQty!=""?tx.inQty:"";
+  document.getElementById("ee-out-date").value=tx.outDate||"";
+  document.getElementById("ee-out-time").value=tx.outTime||"";
+  document.getElementById("ee-out-qty").value=tx.outQty!=""?tx.outQty:"";
+  document.getElementById("ee-remarks").value=tx.remarks||"";
+  document.getElementById("edit-entry-alert").innerHTML="";
+  document.getElementById("edit-entry-modal").style.display="flex";
+}
+
+function closeEditEntry(){
+  document.getElementById("edit-entry-modal").style.display="none";
+  editEntryProcess=null;editEntryRowId=null;
+}
+
+function saveEditEntry(){
+  if(!editEntryProcess||!editEntryRowId)return;
+  const arr=editEntryProcess==="bw"?bwTx:awTx;
+  const tx=arr.find(t=>t.rowId===editEntryRowId);
+  if(!tx)return;
+  // Allow user to clear any field — no mandatory validation
+  const inDate=document.getElementById("ee-in-date").value;
+  const inTime=document.getElementById("ee-in-time").value;
+  const inQty=document.getElementById("ee-in-qty").value;
+  const outDate=document.getElementById("ee-out-date").value;
+  const outTime=document.getElementById("ee-out-time").value;
+  const outQty=document.getElementById("ee-out-qty").value;
+  const remarks=document.getElementById("ee-remarks").value;
+  // Update all fields — empty string means cleared/removed
+  tx.inDate  = inDate;
+  tx.inTime  = inTime;
+  tx.inQty   = inQty!==""?Number(inQty):"";
+  tx.outDate = outDate;
+  tx.outTime = outTime;
+  tx.outQty  = outQty!==""?Number(outQty):"";
+  tx.wipRow  = (inQty!==""?Number(inQty):0)-(outQty!==""?Number(outQty):0);
+  tx.month   = monthStr(inDate||outDate);
+  tx.week    = weekNum(inDate||outDate);
+  tx.remarks = remarks;
+  recalcCumulative(editEntryProcess,tx.styleName,tx.color);
+  closeEditEntry();
+  renderTodayEntries(editEntryProcess);
+  showAlert(`${editEntryProcess}-entry-alert`,"Entry updated. Remember to save to GitHub.","success");
+}
+
+// ── SETUP ────────────────────────────────────────────
+async function submitSetup(){
+  const token = document.getElementById("setup-token").value.trim();
+  const owner = document.getElementById("setup-owner").value.trim();
+  const repo  = document.getElementById("setup-repo").value.trim();
+  const alertEl = document.getElementById("setup-alert");
+
+  if(!token||!owner||!repo){
+    alertEl.innerHTML='<div class="alert alert-warn">Please fill in all fields.</div>';
+    return;
+  }
+  alertEl.innerHTML='<div class="alert alert-info">Connecting to GitHub…</div>';
+
+  // Test connection
+  try{
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${GITHUB_FILE}`,{
+      headers:{"Authorization":`token ${token}`,"Accept":"application/vnd.github.v3+json"},
+      mode:"cors", cache:"no-store"
+    });
+    if(!r.ok) throw new Error(`Error ${r.status} — check your details`);
+    saveConfig(token, owner, repo);
+    document.getElementById("setup-modal").style.display="none";
+    // Now load data
+    document.getElementById("loading-overlay").style.display="flex";
+    document.getElementById("loading-text").textContent="Loading data from GitHub…";
+    const j = await r.json();
+    currentFileSHA = j.sha;
+    const b64=j.content.replace(/[\n\r]/g,"");
+    const bin=atob(b64);
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    parseWB(XLSX.read(arr,{type:"array",cellDates:false}));
+    renderBWDash();
+    setTimeout(()=>{ document.getElementById("loading-overlay").style.display="none"; }, 3000);
+  }catch(e){
+    alertEl.innerHTML=`<div class="alert alert-error">Could not connect: ${e.message}</div>`;
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────
+window.addEventListener("load",async()=>{
+  loadConfig();
+
+  // If no config saved yet — show setup screen
+  if(!configReady()){
+    document.getElementById("loading-overlay").style.display="none";
+    document.getElementById("setup-modal").style.display="flex";
+    return;
+  }
+
+  // Config exists — load data normally
+  const safetyTimer=setTimeout(()=>{
+    document.getElementById("loading-overlay").style.display="none";
+    renderBWDash();
+  },8000);
+
+  const minWait=new Promise(res=>setTimeout(res,3000));
+  try{
+    document.getElementById("loading-text").textContent="Loading data from GitHub…";
+    await Promise.all([loadFromGitHub(),minWait]);
+    document.getElementById("loading-text").textContent="Ready!";
+  }catch(e){
+    console.error("Load error:",e);
+    document.getElementById("loading-text").textContent="⚠ Cannot connect to GitHub. Please check your internet and try again.";
+    await minWait;
+  }
+  clearTimeout(safetyTimer);
+  renderBWDash();
+  document.getElementById("loading-overlay").style.display="none";
+});
+
+</script>
+</body>
+</html>
