@@ -1407,8 +1407,32 @@ function addStyle(){
   clearStyleForm();renderStyleDB();
 }
 function deleteStyle(key){
-  if(!confirm("Delete this style?"))return;
-  styles=styles.filter(s=>s.styleKey!==key);renderStyleDB();
+  const s=styles.find(st=>st.styleKey===key);
+  if(!s)return;
+  const confirmMsg=`Delete style "${s.styleName} / ${s.color}"?\n\nThis will also delete ALL related Before Wash and After Wash transactions for this style.`;
+  if(!confirm(confirmMsg))return;
+
+  // Delete style
+  styles=styles.filter(st=>st.styleKey!==key);
+
+  // Delete all related transactions from BW and AW
+  const bwBefore=bwTx.length;
+  const awBefore=awTx.length;
+  bwTx=bwTx.filter(t=>t.styleKey!==key);
+  awTx=awTx.filter(t=>t.styleKey!==key);
+
+  const bwRemoved=bwBefore-bwTx.length;
+  const awRemoved=awBefore-awTx.length;
+
+  renderStyleDB();
+
+  // Show confirmation with how many transactions were removed
+  let msg=`Style deleted successfully.`;
+  if(bwRemoved>0||awRemoved>0){
+    msg+=` Also removed ${bwRemoved} Before Wash and ${awRemoved} After Wash transaction(s).`;
+  }
+  msg+=` Remember to save to GitHub.`;
+  showAlert("style-alert",msg,"success");
 }
 function renderStyleDB(){
   document.getElementById("style-count").textContent=`${styles.length} style${styles.length!==1?"s":""}`;
