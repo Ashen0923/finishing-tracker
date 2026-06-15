@@ -802,73 +802,110 @@ function parseWB(wb){
   awTx=parseTx("AfterWashTx");
 }
 
+function buildExcel(){
+  const wb=XLSX.utils.book_new();
+  const styleHeaders=["StyleKey","StyleName","Color","ACC","Factory","Product","WashType","TackSample",
+    "StdLeadTimeHrs","BWWaistTie","BWPlacket","BWSleeve","BWBottomHem","BWDummy","BWPocket",
+    "BWWaistTack","BWTackCount","AWRmWashTie","AWRmWashTack","AWRmLabel","AWLoop",
+    "AWReinforce","AWTab","AWDummyRm","AWPocketClean","AWTackCount"];
+  const txHeaders=["RowID","Month","Week","StyleKey","StyleName","Color","Factory","Product",
+    "WashType","TackSample","ACC","InDate","InTime","InQty","OutDate","OutTime","OutQty",
+    "WIPRow","CumulativeWIP","Remarks"];
+  const makeSheet=(headers,rows)=>{
+    const ws=XLSX.utils.aoa_to_sheet([headers]);
+    if(rows.length>0) XLSX.utils.sheet_add_json(ws,rows,{skipHeader:true,origin:"A2"});
+    return ws;
+  };
+  const sRows=styles.map(s=>({
+    StyleKey:s.styleKey,StyleName:s.styleName,Color:s.color,ACC:s.acc,
+    Factory:s.factory,Product:s.product,WashType:s.washType,TackSample:s.tackSample,
+    StdLeadTimeHrs:s.stdLeadTimeHrs,
+    BWWaistTie:s.bwWaistTie,BWPlacket:s.bwPlacket,BWSleeve:s.bwSleeve,
+    BWBottomHem:s.bwBottomHem,BWDummy:s.bwDummy,BWPocket:s.bwPocket,
+    BWWaistTack:s.bwWaistTack,BWTackCount:s.bwTackCount,
+    AWRmWashTie:s.awRmWashTie,AWRmWashTack:s.awRmWashTack,AWRmLabel:s.awRmLabel,
+    AWLoop:s.awLoop,AWReinforce:s.awReinforce,AWTab:s.awTab,
+    AWDummyRm:s.awDummyRm,AWPocketClean:s.awPocketClean,AWTackCount:s.awTackCount
+  }));
+  XLSX.utils.book_append_sheet(wb,makeSheet(styleHeaders,sRows),"StyleDB");
+  const txSheet=(arr,name)=>{
+    const rows=arr.map(t=>({RowID:String(t.rowId),Month:t.month,Week:t.week,
+      StyleKey:t.styleKey,StyleName:t.styleName,Color:t.color,Factory:t.factory,
+      Product:t.product,WashType:t.washType,TackSample:t.tackSample,ACC:t.acc,
+      InDate:String(t.inDate||""),InTime:String(t.inTime||""),
+      InQty:t.inQty!==""?Number(t.inQty):"",
+      OutDate:String(t.outDate||""),OutTime:String(t.outTime||""),
+      OutQty:t.outQty!==""?Number(t.outQty):"",
+      WIPRow:Number(t.wipRow||0),CumulativeWIP:Number(t.cumulativeWip||0),
+      Remarks:String(t.remarks||"")
+    }));
+    XLSX.utils.book_append_sheet(wb,makeSheet(txHeaders,rows),name);
+  };
+  txSheet(bwTx,"BeforeWashTx");
+  txSheet(awTx,"AfterWashTx");
+  return XLSX.write(wb,{bookType:"xlsx",type:"base64"});
+}
+
+async function attemptSave(b64, attempt){
+  // Always get fresh SHA before each attempt
+  const shaR=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`);
+  if(!shaR.ok) throw new Error(`Cannot reach GitHub (attempt ${attempt})`);
+  const latestSHA=(await shaR.json()).sha;
+  const res=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,{
+    method:"PUT",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({message:`Update ${new Date().toISOString()}`,content:b64,sha:latestSHA})
+  });
+  if(!res.ok){
+    const errText=await res.text();
+    throw new Error(errText);
+  }
+  currentFileSHA=(await res.json()).content.sha;
+}
+
 async function saveToGitHub(){
   const btn=document.getElementById("sync-btn");
   const st=document.getElementById("sync-status");
-  btn.disabled=true;btn.textContent="Saving…";st.textContent="";
+
+  // Disable button immediately — prevent double clicks
+  btn.disabled=true;
+  btn.textContent="Saving…";
+  st.textContent="";
+  st.style.color="#546E7A";
+
   try{
-    const wb=XLSX.utils.book_new();
-    // Always write headers even if data is empty
-    const styleHeaders=["StyleKey","StyleName","Color","ACC","Factory","Product","WashType","TackSample",
-      "StdLeadTimeHrs","BWWaistTie","BWPlacket","BWSleeve","BWBottomHem","BWDummy","BWPocket",
-      "BWWaistTack","BWTackCount","AWRmWashTie","AWRmWashTack","AWRmLabel","AWLoop",
-      "AWReinforce","AWTab","AWDummyRm","AWPocketClean","AWTackCount"];
-    const txHeaders=["RowID","Month","Week","StyleKey","StyleName","Color","Factory","Product",
-      "WashType","TackSample","ACC","InDate","InTime","InQty","OutDate","OutTime","OutQty",
-      "WIPRow","CumulativeWIP","Remarks"];
+    const b64=buildExcel();
+    const maxAttempts=3;
 
-    const makeSheet=(headers,rows)=>{
-      const ws=XLSX.utils.aoa_to_sheet([headers]);
-      if(rows.length>0) XLSX.utils.sheet_add_json(ws,rows,{skipHeader:true,origin:"A2"});
-      return ws;
-    };
-
-    const sRows=styles.map(s=>({
-      StyleKey:s.styleKey,StyleName:s.styleName,Color:s.color,ACC:s.acc,
-      Factory:s.factory,Product:s.product,WashType:s.washType,TackSample:s.tackSample,
-      StdLeadTimeHrs:s.stdLeadTimeHrs,
-      BWWaistTie:s.bwWaistTie,BWPlacket:s.bwPlacket,BWSleeve:s.bwSleeve,
-      BWBottomHem:s.bwBottomHem,BWDummy:s.bwDummy,BWPocket:s.bwPocket,
-      BWWaistTack:s.bwWaistTack,BWTackCount:s.bwTackCount,
-      AWRmWashTie:s.awRmWashTie,AWRmWashTack:s.awRmWashTack,AWRmLabel:s.awRmLabel,
-      AWLoop:s.awLoop,AWReinforce:s.awReinforce,AWTab:s.awTab,
-      AWDummyRm:s.awDummyRm,AWPocketClean:s.awPocketClean,AWTackCount:s.awTackCount
-    }));
-    XLSX.utils.book_append_sheet(wb,makeSheet(styleHeaders,sRows),"StyleDB");
-
-    const txSheet=(arr,name)=>{
-      const rows=arr.map(t=>({RowID:String(t.rowId),Month:t.month,Week:t.week,
-        StyleKey:t.styleKey,StyleName:t.styleName,Color:t.color,Factory:t.factory,
-        Product:t.product,WashType:t.washType,TackSample:t.tackSample,ACC:t.acc,
-        InDate:String(t.inDate||""),InTime:String(t.inTime||""),
-        InQty:t.inQty!==""?Number(t.inQty):"",
-        OutDate:String(t.outDate||""),OutTime:String(t.outTime||""),
-        OutQty:t.outQty!==""?Number(t.outQty):"",
-        WIPRow:Number(t.wipRow||0),CumulativeWIP:Number(t.cumulativeWip||0),
-        Remarks:String(t.remarks||"")
-      }));
-      XLSX.utils.book_append_sheet(wb,makeSheet(txHeaders,rows),name);
-    };
-    txSheet(bwTx,"BeforeWashTx");
-    txSheet(awTx,"AfterWashTx");
-    const b64=XLSX.write(wb,{bookType:"xlsx",type:"base64"});
-    // Always fetch latest SHA before saving to avoid conflicts
-    const shaR=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`);
-    if(!shaR.ok) throw new Error(`Could not get latest SHA: ${shaR.status}`);
-    const latestSHA=(await shaR.json()).sha;
-    const res=await ghFetch(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`,{
-      method:"PUT",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({message:`Update ${new Date().toISOString()}`,content:b64,sha:latestSHA})
-    });
-    if(!res.ok) throw new Error(await res.text());
-    currentFileSHA=(await res.json()).content.sha;
-    document.getElementById("last-saved").textContent=new Date().toLocaleTimeString();
-    st.style.color="#2E7D32";st.textContent="Saved successfully";
+    for(let attempt=1;attempt<=maxAttempts;attempt++){
+      try{
+        if(attempt>1){
+          // Wait before retrying — gives GitHub time to finish processing
+          st.textContent=`Retrying… (attempt ${attempt} of ${maxAttempts})`;
+          await new Promise(res=>setTimeout(res,3000));
+        }
+        await attemptSave(b64,attempt);
+        // Success
+        document.getElementById("last-saved").textContent=new Date().toLocaleTimeString();
+        st.style.color="#2E7D32";
+        st.textContent="Saved successfully";
+        break;
+      }catch(e){
+        if(attempt===maxAttempts){
+          throw new Error("Save failed after 3 attempts. Please try again.");
+        }
+        console.warn(`Attempt ${attempt} failed:`,e.message);
+      }
+    }
   }catch(e){
-    st.style.color="#C62828";st.textContent="Save failed — "+e.message;console.error(e);
+    st.style.color="#C62828";
+    st.textContent=e.message;
+    console.error(e);
   }
-  btn.disabled=false;btn.textContent="Save to GitHub";
+
+  // Re-enable button after save completes or fails
+  btn.disabled=false;
+  btn.textContent="Save to GitHub";
 }
 
 // ── NAVIGATION ───────────────────────────────────────
