@@ -808,6 +808,21 @@ async function saveToGitHub(){
   btn.disabled=true;btn.textContent="Saving…";st.textContent="";
   try{
     const wb=XLSX.utils.book_new();
+    // Always write headers even if data is empty
+    const styleHeaders=["StyleKey","StyleName","Color","ACC","Factory","Product","WashType","TackSample",
+      "StdLeadTimeHrs","BWWaistTie","BWPlacket","BWSleeve","BWBottomHem","BWDummy","BWPocket",
+      "BWWaistTack","BWTackCount","AWRmWashTie","AWRmWashTack","AWRmLabel","AWLoop",
+      "AWReinforce","AWTab","AWDummyRm","AWPocketClean","AWTackCount"];
+    const txHeaders=["RowID","Month","Week","StyleKey","StyleName","Color","Factory","Product",
+      "WashType","TackSample","ACC","InDate","InTime","InQty","OutDate","OutTime","OutQty",
+      "WIPRow","CumulativeWIP","Remarks"];
+
+    const makeSheet=(headers,rows)=>{
+      const ws=XLSX.utils.aoa_to_sheet([headers]);
+      if(rows.length>0) XLSX.utils.sheet_add_json(ws,rows,{skipHeader:true,origin:"A2"});
+      return ws;
+    };
+
     const sRows=styles.map(s=>({
       StyleKey:s.styleKey,StyleName:s.styleName,Color:s.color,ACC:s.acc,
       Factory:s.factory,Product:s.product,WashType:s.washType,TackSample:s.tackSample,
@@ -819,7 +834,8 @@ async function saveToGitHub(){
       AWLoop:s.awLoop,AWReinforce:s.awReinforce,AWTab:s.awTab,
       AWDummyRm:s.awDummyRm,AWPocketClean:s.awPocketClean,AWTackCount:s.awTackCount
     }));
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sRows),"StyleDB");
+    XLSX.utils.book_append_sheet(wb,makeSheet(styleHeaders,sRows),"StyleDB");
+
     const txSheet=(arr,name)=>{
       const rows=arr.map(t=>({RowID:String(t.rowId),Month:t.month,Week:t.week,
         StyleKey:t.styleKey,StyleName:t.styleName,Color:t.color,Factory:t.factory,
@@ -831,7 +847,7 @@ async function saveToGitHub(){
         WIPRow:Number(t.wipRow||0),CumulativeWIP:Number(t.cumulativeWip||0),
         Remarks:String(t.remarks||"")
       }));
-      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows,{cellDates:false}),name);
+      XLSX.utils.book_append_sheet(wb,makeSheet(txHeaders,rows),name);
     };
     txSheet(bwTx,"BeforeWashTx");
     txSheet(awTx,"AfterWashTx");
@@ -1257,8 +1273,10 @@ function addEntry(process){
     rowId:Date.now().toString(),month:monthStr(inDate||outDate),week:weekNum(inDate||outDate),
     styleKey:sKey(styleName,color),styleName,color,
     factory:s.factory,product:s.product,washType:s.washType,tackSample:s.tackSample,acc:s.acc,
-    inDate,inTime,inQty:inQty!==""?Number(inQty):"",
-    outDate,outTime,outQty:outQty!==""?Number(outQty):"",
+    inDate:inDate?new Date(inDate).toISOString().split("T")[0]:"",
+    inTime,inQty:inQty!==""?Number(inQty):"",
+    outDate:outDate?new Date(outDate).toISOString().split("T")[0]:"",
+    outTime,outQty:outQty!==""?Number(outQty):"",
     wipRow:rowWip,cumulativeWip:0,remarks
   };
   if(process==="bw") bwTx.push(newTx); else awTx.push(newTx);
@@ -1294,7 +1312,13 @@ function deleteEntry(process,rowId){
 function renderTodayEntries(process){
   const t=today();
   const arr=process==="bw"?bwTx:awTx;
-  const todayTx=arr.filter(tx=>tx.inDate===t||tx.outDate===t);
+  // Normalize dates for Edge compatibility
+  const normDate=d=>{
+    if(!d) return "";
+    try{ return new Date(d).toISOString().split("T")[0]; }
+    catch(e){ return String(d).slice(0,10); }
+  };
+  const todayTx=arr.filter(tx=>normDate(tx.inDate)===t||normDate(tx.outDate)===t);
   const cntEl=document.getElementById(`${process}-today-count`);
   if(cntEl) cntEl.textContent=`${todayTx.length} record${todayTx.length!==1?"s":""}`;
   const tbody=document.getElementById(`${process}-today-body`);
