@@ -1324,6 +1324,7 @@ function addEntry(process){
   showAlert(alertId,"Entry added. Remember to save to GitHub.","success");
   clearEntryForm(prefix);
   renderTodayEntries(process);
+  refreshDashboards();
 }
 function recalcCumulative(process,styleName,color){
   const arr=process==="bw"?bwTx:awTx;
@@ -1348,6 +1349,7 @@ function deleteEntry(process,rowId){
     if(tx) recalcCumulative("aw",tx.styleName,tx.color);
   }
   renderTodayEntries(process);
+  refreshDashboards();
 }
 function renderTodayEntries(process){
   const arr=process==="bw"?bwTx:awTx;
@@ -1443,6 +1445,7 @@ function addStyle(){
   });
   showAlert("style-alert","Style added. Remember to save to GitHub.","success");
   clearStyleForm();renderStyleDB();
+  refreshDashboards();
 }
 function deleteStyle(key){
   const s=styles.find(st=>st.styleKey===key);
@@ -1471,6 +1474,7 @@ function deleteStyle(key){
   }
   msg+=` Remember to save to GitHub.`;
   showAlert("style-alert",msg,"success");
+  refreshDashboards();
 }
 function renderStyleDB(){
   document.getElementById("style-count").textContent=`${styles.length} style${styles.length!==1?"s":""}`;
@@ -1549,6 +1553,7 @@ function saveEditModal(){
   closeEditModal();
   showAlert("style-alert","After Wash tack types updated successfully. Remember to save to GitHub.","success");
   renderStyleDB();
+  refreshDashboards();
 }
 
 // ── EDIT ENTRY ───────────────────────────────────────
@@ -1629,6 +1634,16 @@ function saveEditEntry(){
   closeEditEntry();
   renderTodayEntries(editEntryProcess);
   showAlert(`${editEntryProcess}-entry-alert`,"Entry updated successfully. Remember to save to GitHub.","success");
+  refreshDashboards();
+}
+
+// ── AUTO REFRESH DASHBOARDS ──────────────────────────
+function refreshDashboards(){
+  // Silently refresh both dashboards in background
+  try{ renderBWDash(); }catch(e){}
+  try{ renderAWDash(); }catch(e){}
+  try{ renderProcessView(); }catch(e){}
+  try{ renderWIPSummary(); }catch(e){}
 }
 
 // ── INIT ─────────────────────────────────────────────
