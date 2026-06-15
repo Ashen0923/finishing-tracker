@@ -147,6 +147,14 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .stage-card .sv{font-size:36px;font-weight:700;color:var(--navy);}
 .stage-card p{font-size:11px;color:var(--grey);margin-top:5px;}
 .rank-num{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.pva-progress-wrap{background:#e9ecef;border-radius:20px;height:10px;overflow:hidden;min-width:120px;}
+.pva-progress-bar{height:100%;border-radius:20px;}
+.pva-red{background:#C62828;}.pva-orange{background:#E8A020;}.pva-green{background:#2E7D32;}
+.hold-badge{display:inline-flex;align-items:center;gap:5px;background:#FFEBEE;color:#C62828;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;animation:holdblink 1.2s ease-in-out infinite;}
+@keyframes holdblink{0%,100%{opacity:1;}50%{opacity:.4;}}
+.plan-form{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:18px;}
+.plan-form-hdr{background:var(--teal);padding:13px 20px;color:#fff;font-size:13px;font-weight:700;}
+.plan-form-body{padding:20px;}
 #loading-overlay{position:fixed;inset:0;background:#1F3864;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;overflow:hidden;}
 .ld-ring{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);}
 .ld-ring-1{width:620px;height:620px;border:1px solid rgba(232,160,32,.07);animation:ldspin 14s linear infinite;}
@@ -291,6 +299,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <button onclick="showPage('wip-summary',this)"><span class="ic">&#9672;</span>WIP Summary</button>
     <button onclick="showPage('all-tx',this)"><span class="ic">&#8801;</span>All Transactions</button>
     <div class="sb-sec">Master Data</div>
+    <button onclick="showPage('plan-actual',this)"><span class="ic">&#9635;</span>Plan vs Actual</button>
     <button onclick="showPage('style-db',this)"><span class="ic">&#9647;</span>Style Database</button>
   </nav>
   <div class="sb-footer">
@@ -715,6 +724,124 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
 </div>
 
+<!-- PLAN VS ACTUAL -->
+<div id="page-plan-actual" class="page">
+  <div class="page-top">
+    <div><h2>Plan vs Actual</h2><p>Monthly plan tracking and minimum dispatch monitoring — Before Wash</p></div>
+    <span class="badge-bw">BEFORE WASH</span>
+  </div>
+  <div class="page-body">
+
+    <!-- Add Monthly Plan -->
+    <div class="plan-form">
+      <div class="plan-form-hdr">Add / Update Monthly Plan</div>
+      <div class="plan-form-body">
+        <div id="plan-alert"></div>
+        <div class="field-group" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:12px;margin-bottom:0;align-items:flex-end">
+          <div class="fg2">
+            <label>Style Name</label>
+            <div class="ac-wrap">
+              <input type="text" id="pva-style" placeholder="Type style..." oninput="styleAC(this.value,'pva')" autocomplete="off"/>
+              <div class="ac-list" id="pva-ac" style="display:none"></div>
+            </div>
+          </div>
+          <div class="fg2">
+            <label>Color</label>
+            <select id="pva-color"><option value="">— Select —</option></select>
+          </div>
+          <div class="fg2">
+            <label>Month</label>
+            <input type="month" id="pva-month"/>
+          </div>
+          <div class="fg2">
+            <label>Plan Quantity</label>
+            <input type="number" id="pva-plan-qty" min="0" placeholder="e.g. 1500"/>
+          </div>
+          <div class="fg2">
+            <label>Min Dispatch Qty</label>
+            <input type="number" id="pva-min-dispatch" min="0" placeholder="e.g. 150"/>
+          </div>
+          <div class="fg2">
+            <label>&nbsp;</label>
+            <button class="btn btn-success" onclick="addMonthlyPlan()" style="white-space:nowrap">Add / Update</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="fg">
+        <label>Month</label>
+        <input type="month" id="pva-filter-month"/>
+      </div>
+      <div class="fg">
+        <label>Factory</label>
+        <select id="pva-filter-factory" onchange="renderPlanActual()">
+          <option value="">All Factories</option>
+          <option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="pva-filter-status" onchange="renderPlanActual()">
+          <option value="">All</option>
+          <option value="hold">Cannot Dispatch</option>
+          <option value="complete">Complete</option>
+          <option value="progress">In Progress</option>
+        </select>
+      </div>
+      <button class="btn-clear" onclick="clearPVAFilters()">Clear</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">Total Plan Qty</div><div class="kpi-val" id="pva-k-plan">0</div><div class="kpi-sub">This month</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Total Actual IN</div><div class="kpi-val" id="pva-k-actual">0</div><div class="kpi-sub">Received so far</div></div>
+      <div class="kpi-card o"><div class="kpi-label">Overall Progress</div><div class="kpi-val" id="pva-k-progress">0%</div><div class="kpi-sub">Plan achievement</div></div>
+      <div class="kpi-card r"><div class="kpi-label">Cannot Dispatch</div><div class="kpi-val" id="pva-k-hold">0</div><div class="kpi-sub">WIP &lt; Min Dispatch Qty</div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="chart-row">
+      <div class="chart-box"><h4>Plan vs Actual IN by Style</h4><canvas id="pva-chart-bar"></canvas></div>
+      <div class="chart-box"><h4>Plan Achievement by Factory</h4><canvas id="pva-chart-factory"></canvas></div>
+    </div>
+
+    <!-- Main Table -->
+    <div class="section">
+      <div class="section-hdr">
+        <h3>Style-by-Style Plan vs Actual</h3>
+        <span id="pva-count" style="font-size:11px;color:var(--grey)"></span>
+      </div>
+      <div class="tbl-wrap" style="max-height:500px;overflow-y:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Style</th><th>Color</th><th>Factory</th><th>Month</th>
+              <th>Plan Qty</th><th>Actual IN</th><th>Remaining</th>
+              <th>Progress</th><th>WIP</th><th>Min Dispatch</th><th>Can Dispatch</th>
+            </tr>
+          </thead>
+          <tbody id="pva-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly Plan Records -->
+    <div class="section">
+      <div class="section-hdr"><h3>Monthly Plan Records</h3></div>
+      <div class="tbl-wrap" style="max-height:300px;overflow-y:auto">
+        <table>
+          <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>Month</th><th>Plan Qty</th><th>Min Dispatch Qty</th><th></th></tr></thead>
+          <tbody id="pva-plan-records"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <script>
@@ -729,6 +856,7 @@ function configReady(){return true;}
 let styles=[];
 let bwTx=[];
 let awTx=[];
+let monthlyPlans=[];
 let currentFileSHA="";
 let charts={};
 let editingStyleKey=null;
@@ -770,6 +898,7 @@ function parseWB(wb){
       acc:cl(r.ACC),factory:cl(r.Factory),product:cl(r.Product),
       washType:cl(r.WashType),tackSample:cl(r.TackSample),
       stdLeadTimeHrs:cl(r.StdLeadTimeHrs),
+      minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0,
       bwWaistTie:cl(r.BWWaistTie),bwPlacket:cl(r.BWPlacket),
       bwSleeve:cl(r.BWSleeve),bwBottomHem:cl(r.BWBottomHem),
       bwDummy:cl(r.BWDummy),bwPocket:cl(r.BWPocket),
@@ -800,6 +929,17 @@ function parseWB(wb){
   };
   bwTx=parseTx("BeforeWashTx");
   awTx=parseTx("AfterWashTx");
+
+  // Monthly Plans
+  const wsPlan=wb.Sheets["MonthlyPlan"];
+  if(wsPlan){
+    const rows=XLSX.utils.sheet_to_json(wsPlan,{defval:"",raw:false});
+    monthlyPlans=rows.map(r=>({
+      planKey:cl(r.PlanKey),styleName:cl(r.StyleName),color:cl(r.Color),
+      month:cl(r.Month),planQty:r.PlanQty!==""?Number(r.PlanQty):0,
+      minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0
+    })).filter(p=>p.styleName&&p.styleName!=="StyleName");
+  }
 }
 
 function buildExcel(){
@@ -843,6 +983,15 @@ function buildExcel(){
   };
   txSheet(bwTx,"BeforeWashTx");
   txSheet(awTx,"AfterWashTx");
+
+  // Monthly Plan sheet
+  const planHeaders=["PlanKey","StyleName","Color","Month","PlanQty","MinDispatch"];
+  const planRows=monthlyPlans.map(p=>({
+    PlanKey:p.planKey,StyleName:p.styleName,Color:p.color,
+    Month:p.month,PlanQty:p.planQty,MinDispatch:p.minDispatch
+  }));
+  XLSX.utils.book_append_sheet(wb,makeSheet(planHeaders,planRows),"MonthlyPlan");
+
   return XLSX.write(wb,{bookType:"xlsx",type:"base64"});
 }
 
@@ -917,7 +1066,7 @@ function showPage(page,btn){
   const map={
     "bw-dash":renderBWDash,"aw-dash":renderAWDash,
     "process-view":renderProcessView,"wip-summary":renderWIPSummary,
-    "all-tx":renderAllTx,"style-db":renderStyleDB,
+    "all-tx":renderAllTx,"plan-actual":renderPlanActual,"style-db":renderStyleDB,
     "bw-entry":()=>{renderTodayEntries("bw");updateWIPPrev("bf");},
     "aw-entry":()=>{renderTodayEntries("aw");updateWIPPrev("af");}
   };
@@ -1238,9 +1387,16 @@ function styleAC(val,prefix){
 function selectStyle(name,prefix){
   document.getElementById(`${prefix}-style`).value=name;
   document.getElementById(`${prefix}-ac`).style.display="none";
+  if(prefix==="pva"){
+    const colors=styles.filter(s=>s.styleName.toLowerCase()===name.toLowerCase()).map(s=>s.color);
+    const sel=document.getElementById("pva-color");
+    sel.innerHTML='<option value="">— Select —</option>'+colors.map(col=>`<option value="${col}">${col}</option>`).join("");
+    if(colors.length===1){ sel.value=colors[0]; onColorSel_pva(); }
+    return;
+  }
   const colors=styles.filter(s=>s.styleName.toLowerCase()===name.toLowerCase()).map(s=>s.color);
   const sel=document.getElementById(`${prefix}-color`);
-  sel.innerHTML='<option value="">— Select Color —</option>'+colors.map(c=>`<option value="${c}">${c}</option>`).join("");
+  sel.innerHTML='<option value="">— Select Color —</option>'+colors.map(col=>`<option value="${col}">${col}</option>`).join("");
   clearAF(prefix);
   if(colors.length===1){sel.value=colors[0];onColorSel(prefix);}
 }
@@ -1285,6 +1441,21 @@ document.addEventListener("input",e=>{
   if(["bf-in-qty","bf-out-qty"].includes(e.target.id)) updateWIPPrev("bf");
   if(["af-in-qty","af-out-qty"].includes(e.target.id)) updateWIPPrev("af");
 });
+// PVA color dropdown when style selected
+function onColorSel_pva(){
+  // populate color dropdown for pva prefix
+  const name=document.getElementById("pva-style").value;
+  const colors=styles.filter(s=>s.styleName.toLowerCase()===name.toLowerCase()).map(s=>s.color);
+  const sel=document.getElementById("pva-color");
+  sel.innerHTML='<option value="">— Select —</option>'+colors.map(c=>`<option value="${c}">${c}</option>`).join("");
+  if(colors.length===1) sel.value=colors[0];
+  // Pre-fill min dispatch if already set
+  const color=sel.value;
+  if(color){
+    const existing=monthlyPlans.find(p=>p.styleName.toLowerCase()===name.toLowerCase()&&p.color.toLowerCase()===color.toLowerCase());
+    if(existing&&existing.minDispatch) document.getElementById("pva-min-dispatch").value=existing.minDispatch;
+  }
+}
 document.addEventListener("click",e=>{
   if(!e.target.closest(".ac-wrap")){
     document.querySelectorAll(".ac-list").forEach(l=>l.style.display="none");
@@ -1425,6 +1596,7 @@ function addStyle(){
     washType:document.getElementById("s-wash").value,
     tackSample:document.getElementById("s-tack").value,
     stdLeadTimeHrs:document.getElementById("s-lead").value,
+    minDispatch:0,
     bwWaistTie:document.getElementById("t-waist-tie").value,
     bwPlacket:document.getElementById("t-placket").value,
     bwSleeve:document.getElementById("t-sleeve").value,
@@ -1639,13 +1811,217 @@ function saveEditEntry(){
   refreshDashboards();
 }
 
+// ── PLAN VS ACTUAL ───────────────────────────────────
+function curMonth(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function monthDisplay(m){
+  if(!m) return "—";
+  const [yr,mo]=m.split("-");
+  const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return `${months[parseInt(mo)-1]} ${yr}`;
+}
+
+function addMonthlyPlan(){
+  const styleName=document.getElementById("pva-style").value.trim();
+  const color=document.getElementById("pva-color").value;
+  const month=document.getElementById("pva-month").value;
+  const planQty=document.getElementById("pva-plan-qty").value;
+  const minDispatch=document.getElementById("pva-min-dispatch").value;
+
+  if(!styleName||!color||!month||!planQty){
+    showAlert("plan-alert","Please fill in Style, Color, Month and Plan Quantity.","warn");
+    return;
+  }
+  if(!getStyle(styleName,color)){
+    showAlert("plan-alert","Style not found in database. Please add it first.","error");
+    return;
+  }
+
+  const planKey=`${styleName.toLowerCase()}|||${color.toLowerCase()}|||${month}`;
+  const existing=monthlyPlans.findIndex(p=>p.planKey===planKey);
+
+  if(existing>=0){
+    // Update existing
+    monthlyPlans[existing].planQty=Number(planQty);
+    if(minDispatch!=="") monthlyPlans[existing].minDispatch=Number(minDispatch);
+    showAlert("plan-alert","Monthly plan updated. Remember to save to GitHub.","success");
+  } else {
+    // Add new
+    monthlyPlans.push({
+      planKey,styleName,color,month,
+      planQty:Number(planQty),
+      minDispatch:minDispatch!==""?Number(minDispatch):0
+    });
+    showAlert("plan-alert","Monthly plan added. Remember to save to GitHub.","success");
+  }
+
+  // Also update minDispatch in style database
+  if(minDispatch!==""){
+    const idx=styles.findIndex(s=>s.styleName.toLowerCase()===styleName.toLowerCase()&&s.color.toLowerCase()===color.toLowerCase());
+    if(idx>=0) styles[idx].minDispatch=Number(minDispatch);
+  }
+
+  document.getElementById("pva-style").value="";
+  document.getElementById("pva-color").innerHTML='<option value="">— Select —</option>';
+  document.getElementById("pva-month").value="";
+  document.getElementById("pva-plan-qty").value="";
+  document.getElementById("pva-min-dispatch").value="";
+  renderPlanActual();
+  refreshDashboards();
+}
+
+function deleteMonthlyPlan(planKey){
+  if(!confirm("Delete this monthly plan?")) return;
+  monthlyPlans=monthlyPlans.filter(p=>p.planKey!==planKey);
+  renderPlanActual();
+  showAlert("plan-alert","Plan deleted. Remember to save to GitHub.","success");
+}
+
+function clearPVAFilters(){
+  document.getElementById("pva-filter-month").value=curMonth();
+  document.getElementById("pva-filter-factory").value="";
+  document.getElementById("pva-filter-status").value="";
+  renderPlanActual();
+}
+
+function renderPlanActual(){
+  // Set default month if empty
+  const monthEl=document.getElementById("pva-filter-month");
+  if(!monthEl.value) monthEl.value=curMonth();
+  const selMonth=monthEl.value;
+  const selFactory=document.getElementById("pva-filter-factory").value;
+  const selStatus=document.getElementById("pva-filter-status").value;
+
+  // Get WIP summary from BW transactions
+  const bwWIP=getWIPMap(bwTx);
+
+  // Build rows from monthly plans filtered by month
+  let rows=monthlyPlans
+    .filter(p=>p.month===selMonth)
+    .map(p=>{
+      const s=getStyle(p.styleName,p.color);
+      const factory=s?s.factory:"";
+      if(selFactory&&factory!==selFactory) return null;
+
+      // Actual IN for this style+color this month
+      const actualIn=bwTx
+        .filter(t=>t.styleName.toLowerCase()===p.styleName.toLowerCase()
+               &&t.color.toLowerCase()===p.color.toLowerCase()
+               &&(t.inDate||"").slice(0,7)===selMonth)
+        .reduce((a,t)=>a+(t.inQty!==""?Number(t.inQty):0),0);
+
+      const remaining=Math.max(0,p.planQty-actualIn);
+      const pct=p.planQty>0?Math.round((actualIn/p.planQty)*100):0;
+
+      // Current WIP for this style
+      const wipEntry=bwWIP.find(w=>w.styleName.toLowerCase()===p.styleName.toLowerCase()&&w.color.toLowerCase()===p.color.toLowerCase());
+      const wip=wipEntry?Math.max(0,wipEntry.wip):0;
+
+      const minD=p.minDispatch||0;
+      let dispatchStatus="";
+      if(actualIn>=p.planQty&&wip===0) dispatchStatus="complete";
+      else if(minD>0&&wip<minD&&wip>0) dispatchStatus="hold";
+      else if(minD>0&&wip>=minD) dispatchStatus="candispatch";
+      else dispatchStatus="progress";
+
+      if(selStatus&&selStatus!==dispatchStatus&&!(selStatus==="complete"&&dispatchStatus==="complete")) return null;
+
+      return {styleName:p.styleName,color:p.color,factory,month:p.month,
+              planQty:p.planQty,actualIn,remaining,pct,wip,minD,dispatchStatus,planKey:p.planKey};
+    }).filter(Boolean);
+
+  // KPIs
+  const totalPlan=rows.reduce((a,r)=>a+r.planQty,0);
+  const totalActual=rows.reduce((a,r)=>a+r.actualIn,0);
+  const overallPct=totalPlan>0?Math.round((totalActual/totalPlan)*100):0;
+  const holdCount=rows.filter(r=>r.dispatchStatus==="hold").length;
+
+  document.getElementById("pva-k-plan").textContent=totalPlan.toLocaleString();
+  document.getElementById("pva-k-actual").textContent=totalActual.toLocaleString();
+  document.getElementById("pva-k-progress").textContent=overallPct+"%";
+  document.getElementById("pva-k-hold").textContent=holdCount;
+
+  document.getElementById("pva-count").textContent=`${rows.length} style${rows.length!==1?"s":""}`;
+
+  // Bar Chart — Plan vs Actual
+  const labels=rows.map(r=>`${r.styleName}/${r.color}`);
+  makeChart("pva-chart-bar","bar",{
+    labels,
+    datasets:[
+      {label:"Plan Qty",data:rows.map(r=>r.planQty),backgroundColor:"#BDD7EE",borderRadius:4},
+      {label:"Actual IN",data:rows.map(r=>r.actualIn),backgroundColor:"#2E75B6",borderRadius:4}
+    ]
+  });
+
+  // Factory achievement chart
+  const factories=["SGL","BDD","KGG","KG2","SFC KD"];
+  const facData=factories.map(f=>{
+    const fRows=rows.filter(r=>r.factory===f);
+    if(!fRows.length) return 0;
+    const fp=fRows.reduce((a,r)=>a+r.planQty,0);
+    const fa=fRows.reduce((a,r)=>a+r.actualIn,0);
+    return fp>0?Math.round((fa/fp)*100):0;
+  });
+  makeChart("pva-chart-factory","bar",{
+    labels:factories,
+    datasets:[{label:"% Achieved",data:facData,backgroundColor:facData.map(v=>v>=90?"#2E7D32":v>=50?"#E8A020":"#C62828"),borderRadius:4}]
+  },{scales:{y:{max:100,ticks:{callback:v=>v+"%"}}}});
+
+  // Main table
+  const tbody=document.getElementById("pva-table-body");
+  tbody.innerHTML=rows.length?rows.map(r=>{
+    const pctColor=r.pct>=90?"pva-green":r.pct>=50?"pva-orange":"pva-red";
+    const progressBar=`<div style="display:flex;align-items:center;gap:8px">
+      <div class="pva-progress-wrap" style="flex:1">
+        <div class="pva-progress-bar ${pctColor}" style="width:${Math.min(r.pct,100)}%"></div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:${r.pct>=90?"#2E7D32":r.pct>=50?"#E8A020":"#C62828"}">${r.pct}%</span>
+    </div>`;
+
+    let dispBadge="—";
+    if(r.dispatchStatus==="complete") dispBadge='<span class="badge bz">✅ Complete</span>';
+    else if(r.dispatchStatus==="hold") dispBadge='<span class="hold-badge">⚠ HOLD</span>';
+    else if(r.dispatchStatus==="candispatch") dispBadge='<span class="badge" style="background:#E8F5E9;color:#2E7D32">✅ Can Dispatch</span>';
+    else if(r.minD===0) dispBadge='<span class="badge" style="background:#f0f0f0;color:#666">No Min Set</span>';
+
+    return`<tr>
+      <td><strong>${r.styleName}</strong></td>
+      <td>${r.color}</td>
+      <td>${r.factory||"—"}</td>
+      <td>${monthDisplay(r.month)}</td>
+      <td>${r.planQty.toLocaleString()}</td>
+      <td>${r.actualIn.toLocaleString()}</td>
+      <td>${r.remaining.toLocaleString()}</td>
+      <td style="min-width:160px">${progressBar}</td>
+      <td>${wipBadge(r.wip)}</td>
+      <td>${r.minD>0?r.minD:"—"}</td>
+      <td>${dispBadge}</td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="11" class="no-data">No plan data for ${monthDisplay(selMonth)}. Add monthly plans above.</td></tr>`;
+
+  // Plan records table
+  const recBody=document.getElementById("pva-plan-records");
+  const allPlans=[...monthlyPlans].sort((a,b)=>b.month.localeCompare(a.month));
+  recBody.innerHTML=allPlans.length?allPlans.map(p=>{
+    const s=getStyle(p.styleName,p.color);
+    return`<tr>
+      <td><strong>${p.styleName}</strong></td><td>${p.color}</td>
+      <td>${s?s.factory:"—"}</td><td>${monthDisplay(p.month)}</td>
+      <td>${p.planQty.toLocaleString()}</td><td>${p.minDispatch||"—"}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteMonthlyPlan('${p.planKey}')">Delete</button></td>
+    </tr>`;
+  }).join(""):`<tr><td colspan="7" class="no-data">No plan records yet.</td></tr>`;
+}
+
 // ── AUTO REFRESH DASHBOARDS ──────────────────────────
 function refreshDashboards(){
-  // Silently refresh both dashboards in background
   try{ renderBWDash(); }catch(e){}
   try{ renderAWDash(); }catch(e){}
   try{ renderProcessView(); }catch(e){}
   try{ renderWIPSummary(); }catch(e){}
+  try{ renderPlanActual(); }catch(e){}
 }
 
 // ── INIT ─────────────────────────────────────────────
