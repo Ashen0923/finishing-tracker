@@ -134,8 +134,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .bl{background:#FFF8E1;color:#E65100;}
 .bh{background:#FFEBEE;color:#C62828;}
 .no-data{text-align:center;padding:36px;color:var(--grey);font-size:13px;}
-.ac-wrap{position:relative;}
-.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 6px 6px;max-height:190px;overflow-y:auto;z-index:500;box-shadow:0 6px 16px rgba(0,0,0,.1);}
+.ac-wrap{position:relative;overflow:visible;}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--blue);border-top:none;border-radius:0 0 6px 6px;max-height:190px;overflow-y:auto;z-index:9000;box-shadow:0 6px 16px rgba(0,0,0,.15);}
 .ac-list div{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f4f8;font-size:13px;}
 .ac-list div:hover{background:var(--pale);}
 .ac-list div small{font-size:10px;color:var(--blue);margin-left:6px;}
@@ -152,9 +152,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .pva-red{background:#C62828;}.pva-orange{background:#E8A020;}.pva-green{background:#2E7D32;}
 .hold-badge{display:inline-flex;align-items:center;gap:5px;background:#FFEBEE;color:#C62828;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;animation:holdblink 1.2s ease-in-out infinite;}
 @keyframes holdblink{0%,100%{opacity:1;}50%{opacity:.4;}}
-.plan-form{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden;margin-bottom:18px;}
-.plan-form-hdr{background:var(--teal);padding:13px 20px;color:#fff;font-size:13px;font-weight:700;}
-.plan-form-body{padding:20px;}
+.plan-form{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:18px;}
+.plan-form-hdr{background:var(--teal);padding:13px 20px;color:#fff;font-size:13px;font-weight:700;border-radius:10px 10px 0 0;}
+.plan-form-body{padding:20px;overflow:visible;}
 #loading-overlay{position:fixed;inset:0;background:#1F3864;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;overflow:hidden;}
 .ld-ring{position:absolute;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);}
 .ld-ring-1{width:620px;height:620px;border:1px solid rgba(232,160,32,.07);animation:ldspin 14s linear infinite;}
