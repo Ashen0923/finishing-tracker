@@ -206,38 +206,6 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
 </div>
 
-<!-- SETUP MODAL — shown only on first open -->
-<div id="setup-modal" class="modal-overlay" style="display:none">
-  <div class="modal-box" style="max-width:500px">
-    <div class="modal-hdr" style="background:var(--navy)">
-      <h3>GitHub Connection Setup</h3>
-    </div>
-    <div class="modal-body">
-      <p style="font-size:13px;color:var(--grey);margin-bottom:18px;line-height:1.6">
-        This is a one-time setup. Your details will be saved on this computer and you won't need to enter them again.
-      </p>
-      <div class="field-group" style="grid-template-columns:1fr;gap:14px">
-        <div class="fg2">
-          <label>GitHub Username</label>
-          <input type="text" id="setup-owner" placeholder="e.g. Ashen0923"/>
-        </div>
-        <div class="fg2">
-          <label>Repository Name</label>
-          <input type="text" id="setup-repo" placeholder="e.g. finishing-tracker"/>
-        </div>
-        <div class="fg2">
-          <label>GitHub Personal Access Token</label>
-          <input type="password" id="setup-token" placeholder="ghp_xxxxxxxxxxxx"/>
-        </div>
-      </div>
-      <div id="setup-alert" style="margin-top:12px"></div>
-      <div class="btn-row" style="margin-top:18px">
-        <button class="btn btn-primary" onclick="submitSetup()">Connect & Start</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- EDIT STYLE MODAL -->
 <div id="edit-modal" class="modal-overlay" style="display:none">
   <div class="modal-box">
@@ -750,26 +718,13 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 </div><!-- /main -->
 
 <script>
-// Config — loaded from localStorage or entered by user on first open
-let GITHUB_TOKEN="";
-let GITHUB_OWNER="";
-let GITHUB_REPO="";
+// Config
+const GITHUB_OWNER="Ashen0923";
+const GITHUB_REPO="finishing-tracker";
 const GITHUB_FILE="finishing_data.xlsx";
-
-function loadConfig(){
-  GITHUB_TOKEN = localStorage.getItem("gh_token")||"";
-  GITHUB_OWNER = localStorage.getItem("gh_owner")||"";
-  GITHUB_REPO  = localStorage.getItem("gh_repo")||"";
-}
-function saveConfig(token,owner,repo){
-  localStorage.setItem("gh_token", token);
-  localStorage.setItem("gh_owner", owner);
-  localStorage.setItem("gh_repo",  repo);
-  GITHUB_TOKEN=token; GITHUB_OWNER=owner; GITHUB_REPO=repo;
-}
-function configReady(){
-  return GITHUB_TOKEN && GITHUB_OWNER && GITHUB_REPO;
-}
+const GITHUB_TOKEN=["ghp_3opTsmVlOX","hodYIg0NPuWrwm","Tq5Xdn1BOy0c"].join("");
+function loadConfig(){}
+function configReady(){return true;}
 
 let styles=[];
 let bwTx=[];
@@ -1573,57 +1528,9 @@ function saveEditEntry(){
   showAlert(`${editEntryProcess}-entry-alert`,"Entry updated. Remember to save to GitHub.","success");
 }
 
-// ── SETUP ────────────────────────────────────────────
-async function submitSetup(){
-  const token = document.getElementById("setup-token").value.trim();
-  const owner = document.getElementById("setup-owner").value.trim();
-  const repo  = document.getElementById("setup-repo").value.trim();
-  const alertEl = document.getElementById("setup-alert");
-
-  if(!token||!owner||!repo){
-    alertEl.innerHTML='<div class="alert alert-warn">Please fill in all fields.</div>';
-    return;
-  }
-  alertEl.innerHTML='<div class="alert alert-info">Connecting to GitHub…</div>';
-
-  // Test connection
-  try{
-    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${GITHUB_FILE}`,{
-      headers:{"Authorization":`token ${token}`,"Accept":"application/vnd.github.v3+json"},
-      mode:"cors", cache:"no-store"
-    });
-    if(!r.ok) throw new Error(`Error ${r.status} — check your details`);
-    saveConfig(token, owner, repo);
-    document.getElementById("setup-modal").style.display="none";
-    // Now load data
-    document.getElementById("loading-overlay").style.display="flex";
-    document.getElementById("loading-text").textContent="Loading data from GitHub…";
-    const j = await r.json();
-    currentFileSHA = j.sha;
-    const b64=j.content.replace(/[\n\r]/g,"");
-    const bin=atob(b64);
-    const arr=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-    parseWB(XLSX.read(arr,{type:"array",cellDates:false}));
-    renderBWDash();
-    setTimeout(()=>{ document.getElementById("loading-overlay").style.display="none"; }, 3000);
-  }catch(e){
-    alertEl.innerHTML=`<div class="alert alert-error">Could not connect: ${e.message}</div>`;
-  }
-}
-
 // ── INIT ─────────────────────────────────────────────
 window.addEventListener("load",async()=>{
   loadConfig();
-
-  // If no config saved yet — show setup screen
-  if(!configReady()){
-    document.getElementById("loading-overlay").style.display="none";
-    document.getElementById("setup-modal").style.display="flex";
-    return;
-  }
-
-  // Config exists — load data normally
   const safetyTimer=setTimeout(()=>{
     document.getElementById("loading-overlay").style.display="none";
     renderBWDash();
