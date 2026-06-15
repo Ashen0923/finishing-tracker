@@ -1631,9 +1631,11 @@ function saveEditEntry(){
     recalcCumulative("aw",awTx[idx].styleName,awTx[idx].color);
   }
 
+  // Save process before closeEditEntry nulls it
+  const proc=editEntryProcess;
   closeEditEntry();
-  renderTodayEntries(editEntryProcess);
-  showAlert(`${editEntryProcess}-entry-alert`,"Entry updated successfully. Remember to save to GitHub.","success");
+  renderTodayEntries(proc);
+  showAlert(`${proc}-entry-alert`,"Entry updated successfully. Remember to save to GitHub.","success");
   refreshDashboards();
 }
 
