@@ -420,7 +420,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       </div>
     </div>
     <div class="section">
-      <div class="section-hdr"><h3>Today's Entries</h3><span id="bw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="section-hdr"><h3>All Entries</h3><span id="bw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
         <tbody id="bw-today-body"></tbody>
@@ -546,7 +546,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       </div>
     </div>
     <div class="section">
-      <div class="section-hdr"><h3>Today's Entries</h3><span id="aw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
+      <div class="section-hdr"><h3>All Entries</h3><span id="aw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
         <tbody id="aw-today-body"></tbody>
@@ -1313,20 +1313,18 @@ function deleteEntry(process,rowId){
   renderTodayEntries(process);
 }
 function renderTodayEntries(process){
-  const t=today();
   const arr=process==="bw"?bwTx:awTx;
-  // Normalize dates for Edge compatibility
-  const normDate=d=>{
-    if(!d) return "";
-    // Use local date string directly — avoid UTC conversion issues
-    return String(d).slice(0,10);
-  };
-  const todayTx=arr.filter(tx=>normDate(tx.inDate)===t||normDate(tx.outDate)===t);
+  // Show all entries sorted by most recent first
+  const sorted=[...arr].sort((a,b)=>{
+    const da=a.inDate||a.outDate||"";
+    const db=b.inDate||b.outDate||"";
+    return db.localeCompare(da);
+  });
   const cntEl=document.getElementById(`${process}-today-count`);
-  if(cntEl) cntEl.textContent=`${todayTx.length} record${todayTx.length!==1?"s":""}`;
+  if(cntEl) cntEl.textContent=`${sorted.length} record${sorted.length!==1?"s":""}`;
   const tbody=document.getElementById(`${process}-today-body`);
   if(!tbody)return;
-  tbody.innerHTML=todayTx.length?todayTx.map(tx=>`<tr>
+  tbody.innerHTML=sorted.length?sorted.map(tx=>`<tr>
     <td><strong>${tx.styleName}</strong></td><td>${tx.color}</td><td>${tx.factory}</td>
     <td>${tx.inDate||"—"}</td><td>${tx.inTime||"—"}</td><td>${tx.inQty!==""?tx.inQty:"—"}</td>
     <td>${tx.outDate||"—"}</td><td>${tx.outTime||"—"}</td><td>${tx.outQty!==""?tx.outQty:"—"}</td>
@@ -1336,7 +1334,7 @@ function renderTodayEntries(process){
       <button class="btn-edit" onclick="openEditEntry('${process}','${tx.rowId}')">Edit</button>
       <button class="btn btn-danger btn-sm" onclick="deleteEntry('${process}','${tx.rowId}')">Delete</button>
     </td>
-  </tr>`).join(""):`<tr><td colspan="13" class="no-data">No entries for today.</td></tr>`;
+  </tr>`).join(""):`<tr><td colspan="13" class="no-data">No entries yet.</td></tr>`;
 }
 function clearEntryForm(prefix){
   [`${prefix}-style`,`${prefix}-in-date`,`${prefix}-in-time`,`${prefix}-in-qty`,
