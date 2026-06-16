@@ -750,8 +750,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
             <select id="pva-color"><option value="">— Select —</option></select>
           </div>
           <div class="fg2">
-            <label>Month</label>
-            <input type="month" id="pva-month"/>
+            <label>Plan Start Date</label>
+            <input type="date" id="pva-month"/>
           </div>
           <div class="fg2">
             <label>Plan Quantity</label>
@@ -772,8 +772,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <!-- Filters -->
     <div class="filter-bar">
       <div class="fg">
-        <label>Month</label>
-        <input type="month" id="pva-filter-month"/>
+        <label>As of Date</label>
+        <input type="date" id="pva-filter-month" onchange="renderPlanActual()"/>
       </div>
       <div class="fg">
         <label>Factory</label>
@@ -818,7 +818,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         <table>
           <thead>
             <tr>
-              <th>Style</th><th>Color</th><th>Factory</th><th>Month</th>
+              <th>Style</th><th>Color</th><th>Factory</th><th>Plan Start</th><th>Plan End</th>
               <th>Plan Qty</th><th>Actual IN</th><th>Remaining</th>
               <th>Progress</th><th>WIP</th><th>Min Dispatch</th><th>Can Dispatch</th>
             </tr>
@@ -833,7 +833,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="section-hdr"><h3>Monthly Plan Records</h3></div>
       <div class="tbl-wrap" style="max-height:300px;overflow-y:auto">
         <table>
-          <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>Month</th><th>Plan Qty</th><th>Min Dispatch Qty</th><th></th></tr></thead>
+          <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>Start Date</th><th>End Date</th><th>Plan Qty</th><th>Min Dispatch</th><th></th></tr></thead>
           <tbody id="pva-plan-records"></tbody>
         </table>
       </div>
@@ -935,10 +935,14 @@ function parseWB(wb){
   if(wsPlan){
     const rows=XLSX.utils.sheet_to_json(wsPlan,{defval:"",raw:false});
     monthlyPlans=rows.map(r=>({
-      planKey:cl(r.PlanKey),styleName:cl(r.StyleName),color:cl(r.Color),
-      month:cl(r.Month),planQty:r.PlanQty!==""?Number(r.PlanQty):0,
+      planKey:cl(r.PlanKey),
+      styleName:cl(r.StyleName),
+      color:cl(r.Color),
+      startDate:cl(r.StartDate)||cl(r.Month)||"",
+      planQty:r.PlanQty!==""?Number(r.PlanQty):0,
       minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0
     })).filter(p=>p.styleName&&p.styleName!=="StyleName");
+    console.log("Loaded plans:",monthlyPlans.length, monthlyPlans);
   }
 }
 
@@ -985,10 +989,10 @@ function buildExcel(){
   txSheet(awTx,"AfterWashTx");
 
   // Monthly Plan sheet
-  const planHeaders=["PlanKey","StyleName","Color","Month","PlanQty","MinDispatch"];
+  const planHeaders=["PlanKey","StyleName","Color","StartDate","PlanQty","MinDispatch"];
   const planRows=monthlyPlans.map(p=>({
     PlanKey:p.planKey,StyleName:p.styleName,Color:p.color,
-    Month:p.month,PlanQty:p.planQty,MinDispatch:p.minDispatch
+    StartDate:p.startDate,PlanQty:p.planQty,MinDispatch:p.minDispatch
   }));
   XLSX.utils.book_append_sheet(wb,makeSheet(planHeaders,planRows),"MonthlyPlan");
 
@@ -1826,12 +1830,12 @@ function monthDisplay(m){
 function addMonthlyPlan(){
   const styleName=document.getElementById("pva-style").value.trim();
   const color=document.getElementById("pva-color").value;
-  const month=document.getElementById("pva-month").value;
+  const startDate=document.getElementById("pva-month").value;
   const planQty=document.getElementById("pva-plan-qty").value;
   const minDispatch=document.getElementById("pva-min-dispatch").value;
 
-  if(!styleName||!color||!month||!planQty){
-    showAlert("plan-alert","Please fill in Style, Color, Month and Plan Quantity.","warn");
+  if(!styleName||!color||!startDate||!planQty){
+    showAlert("plan-alert","Please fill in Style, Color, Start Date and Plan Quantity.","warn");
     return;
   }
   if(!getStyle(styleName,color)){
@@ -1839,25 +1843,22 @@ function addMonthlyPlan(){
     return;
   }
 
-  const planKey=`${styleName.toLowerCase()}|||${color.toLowerCase()}|||${month}`;
+  const planKey=`${styleName.toLowerCase()}|||${color.toLowerCase()}|||${startDate}`;
   const existing=monthlyPlans.findIndex(p=>p.planKey===planKey);
 
   if(existing>=0){
-    // Update existing
     monthlyPlans[existing].planQty=Number(planQty);
     if(minDispatch!=="") monthlyPlans[existing].minDispatch=Number(minDispatch);
-    showAlert("plan-alert","Monthly plan updated. Remember to save to GitHub.","success");
+    showAlert("plan-alert","Plan updated. Remember to save to GitHub.","success");
   } else {
-    // Add new
     monthlyPlans.push({
-      planKey,styleName,color,month,
+      planKey,styleName,color,startDate,
       planQty:Number(planQty),
       minDispatch:minDispatch!==""?Number(minDispatch):0
     });
-    showAlert("plan-alert","Monthly plan added. Remember to save to GitHub.","success");
+    showAlert("plan-alert","Plan added. Remember to save to GitHub.","success");
   }
 
-  // Also update minDispatch in style database
   if(minDispatch!==""){
     const idx=styles.findIndex(s=>s.styleName.toLowerCase()===styleName.toLowerCase()&&s.color.toLowerCase()===color.toLowerCase());
     if(idx>=0) styles[idx].minDispatch=Number(minDispatch);
@@ -1880,61 +1881,114 @@ function deleteMonthlyPlan(planKey){
 }
 
 function clearPVAFilters(){
-  document.getElementById("pva-filter-month").value=curMonth();
+  document.getElementById("pva-filter-month").value=today();
   document.getElementById("pva-filter-factory").value="";
   document.getElementById("pva-filter-status").value="";
   renderPlanActual();
 }
 
+function getActivePlan(styleName,color,asOfDate){
+  // Get all plans for this style+color sorted by startDate ascending
+  const stylePlans=monthlyPlans
+    .filter(p=>p.styleName.toLowerCase()===styleName.toLowerCase()
+            &&p.color.toLowerCase()===color.toLowerCase())
+    .sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  if(!stylePlans.length) return null;
+
+  // Find the active plan for asOfDate
+  let active=null;
+  let endDate=null;
+  for(let i=0;i<stylePlans.length;i++){
+    const p=stylePlans[i];
+    const nextStart=stylePlans[i+1]?stylePlans[i+1].startDate:null;
+    // End date = day before next plan start, or ongoing if no next plan
+    const pEnd=nextStart?new Date(new Date(nextStart)-86400000).toISOString().split("T")[0]:"9999-12-31";
+    if(asOfDate>=p.startDate&&asOfDate<=pEnd){
+      active=p;
+      endDate=pEnd==="9999-12-31"?"ongoing":pEnd;
+      break;
+    }
+  }
+  if(!active) return null;
+  return {...active,endDate};
+}
+
 function renderPlanActual(){
-  // Set default month if empty
-  const monthEl=document.getElementById("pva-filter-month");
-  if(!monthEl.value) monthEl.value=curMonth();
-  const selMonth=monthEl.value;
+  // Default to today
+  const dateEl=document.getElementById("pva-filter-month");
+  if(!dateEl.value) dateEl.value=today();
+  const selDate=dateEl.value;
   const selFactory=document.getElementById("pva-filter-factory").value;
   const selStatus=document.getElementById("pva-filter-status").value;
 
-  // Get WIP summary from BW transactions
   const bwWIP=getWIPMap(bwTx);
 
-  // Build rows from monthly plans filtered by month
-  let rows=monthlyPlans
-    .filter(p=>p.month===selMonth)
-    .map(p=>{
-      const s=getStyle(p.styleName,p.color);
-      const factory=s?s.factory:"";
-      if(selFactory&&factory!==selFactory) return null;
+  // Get all unique style+color combinations
+  const allKeys=new Set([
+    ...styles.map(s=>s.styleName.toLowerCase()+"|||"+s.color.toLowerCase()),
+    ...monthlyPlans.map(p=>p.styleName.toLowerCase()+"|||"+p.color.toLowerCase())
+  ]);
 
-      // Actual IN for this style+color this month
+  let rows=[];
+  allKeys.forEach(key=>{
+    const [sn,cl2]=key.split("|||");
+    const s=styles.find(st=>st.styleName.toLowerCase()===sn&&st.color.toLowerCase()===cl2);
+    if(!s) return;
+    if(selFactory&&s.factory!==selFactory) return;
+
+    const activePlan=getActivePlan(s.styleName,s.color,selDate);
+    const wipEntry=bwWIP.find(w=>w.styleName.toLowerCase()===sn&&w.color.toLowerCase()===cl2);
+    const wip=wipEntry?Math.max(0,wipEntry.wip):0;
+    const minD=(activePlan?activePlan.minDispatch:0)||(s.minDispatch||0);
+
+    if(!activePlan){
+      // No plan — still show style
       const actualIn=bwTx
-        .filter(t=>t.styleName.toLowerCase()===p.styleName.toLowerCase()
-               &&t.color.toLowerCase()===p.color.toLowerCase()
-               &&(t.inDate||"").slice(0,7)===selMonth)
+        .filter(t=>t.styleName.toLowerCase()===sn&&t.color.toLowerCase()===cl2)
         .reduce((a,t)=>a+(t.inQty!==""?Number(t.inQty):0),0);
+      if(selStatus&&selStatus!=="noplan") return;
+      rows.push({styleName:s.styleName,color:s.color,factory:s.factory,
+        startDate:"—",endDate:"—",planQty:0,actualIn,remaining:0,pct:0,
+        wip,minD,dispatchStatus:"noplan",planKey:""});
+      return;
+    }
 
-      const remaining=Math.max(0,p.planQty-actualIn);
-      const pct=p.planQty>0?Math.round((actualIn/p.planQty)*100):0;
+    // Actual IN within plan period
+    const planEnd=activePlan.endDate==="ongoing"?"9999-12-31":activePlan.endDate;
+    const actualIn=bwTx
+      .filter(t=>{
+        const d=t.inDate||"";
+        return t.styleName.toLowerCase()===sn&&t.color.toLowerCase()===cl2
+               &&d>=activePlan.startDate&&d<=planEnd;
+      })
+      .reduce((a,t)=>a+(t.inQty!==""?Number(t.inQty):0),0);
 
-      // Current WIP for this style
-      const wipEntry=bwWIP.find(w=>w.styleName.toLowerCase()===p.styleName.toLowerCase()&&w.color.toLowerCase()===p.color.toLowerCase());
-      const wip=wipEntry?Math.max(0,wipEntry.wip):0;
+    const remaining=Math.max(0,activePlan.planQty-actualIn);
+    const pct=activePlan.planQty>0?Math.round((actualIn/activePlan.planQty)*100):0;
 
-      const minD=p.minDispatch||0;
-      let dispatchStatus="";
-      if(actualIn>=p.planQty&&wip===0) dispatchStatus="complete";
-      else if(minD>0&&wip<minD&&wip>0) dispatchStatus="hold";
-      else if(minD>0&&wip>=minD) dispatchStatus="candispatch";
-      else dispatchStatus="progress";
+    let dispatchStatus="progress";
+    if(actualIn>=activePlan.planQty&&wip===0) dispatchStatus="complete";
+    else if(minD>0&&wip>0&&wip<minD) dispatchStatus="hold";
+    else if(minD>0&&wip>=minD) dispatchStatus="candispatch";
 
-      if(selStatus&&selStatus!==dispatchStatus&&!(selStatus==="complete"&&dispatchStatus==="complete")) return null;
+    if(selStatus&&selStatus!==dispatchStatus) return;
 
-      return {styleName:p.styleName,color:p.color,factory,month:p.month,
-              planQty:p.planQty,actualIn,remaining,pct,wip,minD,dispatchStatus,planKey:p.planKey};
-    }).filter(Boolean);
+    rows.push({styleName:s.styleName,color:s.color,factory:s.factory,
+      startDate:activePlan.startDate,endDate:activePlan.endDate,
+      planQty:activePlan.planQty,actualIn,remaining,pct,
+      wip,minD,dispatchStatus,planKey:activePlan.planKey});
+  });
+
+  // Sort — hold first, then by pct ascending
+  rows.sort((a,b)=>{
+    const order={hold:0,noplan:1,progress:2,candispatch:3,complete:4};
+    return (order[a.dispatchStatus]||2)-(order[b.dispatchStatus]||2);
+  });
 
   // KPIs
-  const totalPlan=rows.reduce((a,r)=>a+r.planQty,0);
-  const totalActual=rows.reduce((a,r)=>a+r.actualIn,0);
+  const planRows=rows.filter(r=>r.planQty>0);
+  const totalPlan=planRows.reduce((a,r)=>a+r.planQty,0);
+  const totalActual=planRows.reduce((a,r)=>a+r.actualIn,0);
   const overallPct=totalPlan>0?Math.round((totalActual/totalPlan)*100):0;
   const holdCount=rows.filter(r=>r.dispatchStatus==="hold").length;
 
@@ -1942,23 +1996,22 @@ function renderPlanActual(){
   document.getElementById("pva-k-actual").textContent=totalActual.toLocaleString();
   document.getElementById("pva-k-progress").textContent=overallPct+"%";
   document.getElementById("pva-k-hold").textContent=holdCount;
-
   document.getElementById("pva-count").textContent=`${rows.length} style${rows.length!==1?"s":""}`;
 
-  // Bar Chart — Plan vs Actual
-  const labels=rows.map(r=>`${r.styleName}/${r.color}`);
+  // Bar Chart
+  const chartRows=rows.filter(r=>r.planQty>0);
   makeChart("pva-chart-bar","bar",{
-    labels,
+    labels:chartRows.map(r=>`${r.styleName}/${r.color}`),
     datasets:[
-      {label:"Plan Qty",data:rows.map(r=>r.planQty),backgroundColor:"#BDD7EE",borderRadius:4},
-      {label:"Actual IN",data:rows.map(r=>r.actualIn),backgroundColor:"#2E75B6",borderRadius:4}
+      {label:"Plan Qty",data:chartRows.map(r=>r.planQty),backgroundColor:"#BDD7EE",borderRadius:4},
+      {label:"Actual IN",data:chartRows.map(r=>r.actualIn),backgroundColor:"#2E75B6",borderRadius:4}
     ]
   });
 
-  // Factory achievement chart
+  // Factory chart
   const factories=["SGL","BDD","KGG","KG2","SFC KD"];
   const facData=factories.map(f=>{
-    const fRows=rows.filter(r=>r.factory===f);
+    const fRows=planRows.filter(r=>r.factory===f);
     if(!fRows.length) return 0;
     const fp=fRows.reduce((a,r)=>a+r.planQty,0);
     const fa=fRows.reduce((a,r)=>a+r.actualIn,0);
@@ -1966,53 +2019,66 @@ function renderPlanActual(){
   });
   makeChart("pva-chart-factory","bar",{
     labels:factories,
-    datasets:[{label:"% Achieved",data:facData,backgroundColor:facData.map(v=>v>=90?"#2E7D32":v>=50?"#E8A020":"#C62828"),borderRadius:4}]
+    datasets:[{label:"% Achieved",data:facData,
+      backgroundColor:facData.map(v=>v>=90?"#2E7D32":v>=50?"#E8A020":"#C62828"),borderRadius:4}]
   },{scales:{y:{max:100,ticks:{callback:v=>v+"%"}}}});
 
   // Main table
   const tbody=document.getElementById("pva-table-body");
   tbody.innerHTML=rows.length?rows.map(r=>{
     const pctColor=r.pct>=90?"pva-green":r.pct>=50?"pva-orange":"pva-red";
-    const progressBar=`<div style="display:flex;align-items:center;gap:8px">
+    const progressBar=r.planQty>0?`<div style="display:flex;align-items:center;gap:8px">
       <div class="pva-progress-wrap" style="flex:1">
         <div class="pva-progress-bar ${pctColor}" style="width:${Math.min(r.pct,100)}%"></div>
       </div>
       <span style="font-size:11px;font-weight:700;color:${r.pct>=90?"#2E7D32":r.pct>=50?"#E8A020":"#C62828"}">${r.pct}%</span>
-    </div>`;
+    </div>`:"—";
 
     let dispBadge="—";
-    if(r.dispatchStatus==="complete") dispBadge='<span class="badge bz">✅ Complete</span>';
+    if(r.dispatchStatus==="noplan") dispBadge='<span class="badge" style="background:#f0f0f0;color:#888">No Plan</span>';
+    else if(r.dispatchStatus==="complete") dispBadge='<span class="badge bz">✅ Complete</span>';
     else if(r.dispatchStatus==="hold") dispBadge='<span class="hold-badge">⚠ HOLD</span>';
     else if(r.dispatchStatus==="candispatch") dispBadge='<span class="badge" style="background:#E8F5E9;color:#2E7D32">✅ Can Dispatch</span>';
-    else if(r.minD===0) dispBadge='<span class="badge" style="background:#f0f0f0;color:#666">No Min Set</span>';
+    else if(r.minD===0) dispBadge='<span class="badge" style="background:#fff8e1;color:#f57f17">No Min Set</span>';
+
+    const endDisp=r.endDate==="ongoing"?'<span style="color:var(--teal);font-weight:600">Ongoing</span>':r.endDate;
 
     return`<tr>
       <td><strong>${r.styleName}</strong></td>
       <td>${r.color}</td>
       <td>${r.factory||"—"}</td>
-      <td>${monthDisplay(r.month)}</td>
-      <td>${r.planQty.toLocaleString()}</td>
-      <td>${r.actualIn.toLocaleString()}</td>
-      <td>${r.remaining.toLocaleString()}</td>
+      <td>${r.startDate}</td>
+      <td>${endDisp}</td>
+      <td>${r.planQty>0?r.planQty.toLocaleString():"—"}</td>
+      <td>${r.planQty>0?r.actualIn.toLocaleString():r.actualIn}</td>
+      <td>${r.planQty>0?r.remaining.toLocaleString():"—"}</td>
       <td style="min-width:160px">${progressBar}</td>
       <td>${wipBadge(r.wip)}</td>
       <td>${r.minD>0?r.minD:"—"}</td>
       <td>${dispBadge}</td>
     </tr>`;
-  }).join(""):`<tr><td colspan="11" class="no-data">No plan data for ${monthDisplay(selMonth)}. Add monthly plans above.</td></tr>`;
+  }).join(""):`<tr><td colspan="12" class="no-data">No styles found.</td></tr>`;
 
-  // Plan records table
+  // Plan records
   const recBody=document.getElementById("pva-plan-records");
-  const allPlans=[...monthlyPlans].sort((a,b)=>b.month.localeCompare(a.month));
+  const allPlans=[...monthlyPlans].sort((a,b)=>b.startDate.localeCompare(a.startDate));
   recBody.innerHTML=allPlans.length?allPlans.map(p=>{
     const s=getStyle(p.styleName,p.color);
+    // Find end date
+    const stylePlans=monthlyPlans
+      .filter(pl=>pl.styleName.toLowerCase()===p.styleName.toLowerCase()&&pl.color.toLowerCase()===p.color.toLowerCase())
+      .sort((a,b)=>a.startDate.localeCompare(b.startDate));
+    const idx2=stylePlans.findIndex(pl=>pl.planKey===p.planKey);
+    const nextStart=stylePlans[idx2+1]?stylePlans[idx2+1].startDate:null;
+    const endDisp=nextStart?new Date(new Date(nextStart)-86400000).toISOString().split("T")[0]:"Ongoing";
     return`<tr>
       <td><strong>${p.styleName}</strong></td><td>${p.color}</td>
-      <td>${s?s.factory:"—"}</td><td>${monthDisplay(p.month)}</td>
+      <td>${s?s.factory:"—"}</td>
+      <td>${p.startDate}</td><td>${endDisp}</td>
       <td>${p.planQty.toLocaleString()}</td><td>${p.minDispatch||"—"}</td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteMonthlyPlan('${p.planKey}')">Delete</button></td>
     </tr>`;
-  }).join(""):`<tr><td colspan="7" class="no-data">No plan records yet.</td></tr>`;
+  }).join(""):`<tr><td colspan="8" class="no-data">No plan records yet.</td></tr>`;
 }
 
 // ── AUTO REFRESH DASHBOARDS ──────────────────────────
