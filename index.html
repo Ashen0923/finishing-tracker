@@ -869,6 +869,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="filter-bar">
         <div class="fg"><label>From Date</label><input type="date" id="qcd-from" onchange="renderQCDash()"/></div>
         <div class="fg"><label>To Date</label><input type="date" id="qcd-to" onchange="renderQCDash()"/></div>
+        <div class="fg"><label>Style Name</label><input type="text" id="qcd-style" placeholder="Search style…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
         <div class="fg"><label>Factory</label>
           <select id="qcd-factory" onchange="renderQCDash()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
         <button class="btn-clear" onclick="clearQCDashFilters()">Clear</button>
@@ -2565,11 +2566,12 @@ function renderQCRecent(){
   }).join(""):`<tr><td colspan="12" class="no-data">No quality entries yet.</td></tr>`;
 }
 
-function filterQC(from,to,factory){
+function filterQC(from,to,factory,style){
   return qualityChecks.filter(q=>{
     if(from&&q.date<from) return false;
     if(to&&q.date>to) return false;
     if(factory&&q.factory!==factory) return false;
+    if(style&&!q.styleName.toLowerCase().includes(style.toLowerCase())) return false;
     return true;
   });
 }
@@ -2577,8 +2579,9 @@ function filterQC(from,to,factory){
 function renderQCDash(){
   const from=document.getElementById("qcd-from").value;
   const to=document.getElementById("qcd-to").value;
+  const style=document.getElementById("qcd-style").value;
   const factory=document.getElementById("qcd-factory").value;
-  const data=filterQC(from,to,factory);
+  const data=filterQC(from,to,factory,style);
 
   const totalOut=data.reduce((a,q)=>a+q.outQty,0);
   const totalGood=data.reduce((a,q)=>a+q.good,0);
@@ -2669,7 +2672,7 @@ function renderQCDash(){
 }
 
 function clearQCDashFilters(){
-  ["qcd-from","qcd-to","qcd-factory"].forEach(id=>{document.getElementById(id).value="";});
+  ["qcd-from","qcd-to","qcd-style","qcd-factory"].forEach(id=>{document.getElementById(id).value="";});
   renderQCDash();
 }
 
