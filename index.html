@@ -1376,7 +1376,7 @@ function weekNum(d){if(!d)return"";const dt=new Date(d),s=new Date(dt.getFullYea
 const monthStr=d=>d?new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";
 const sKey=(n,c)=>(n+"|||"+c).toLowerCase();
 const getStyle=(n,c)=>styles.find(s=>s.styleName.toLowerCase()===n.toLowerCase()&&s.color.toLowerCase()===c.toLowerCase());
-const wipBadge=v=>v===0?`<span class="badge bz">0 — Cleared</span>`:v<=50?`<span class="badge bl">${v}</span>`:`<span class="badge bh">${v}</span>`;
+const wipBadge=v=>v===0?`<span class="badge bz">0</span>`:v<=50?`<span class="badge bl">${v}</span>`:`<span class="badge bh">${v}</span>`;
 
 function getWIPMap(txArr){
   const map={};
@@ -1704,7 +1704,11 @@ function renderAllTx(){
     <td>${i+1}</td><td>${t.month}</td><td>${t.week}</td><td><strong>${t.styleName}</strong></td><td>${t.color}</td><td>${t.factory}</td>
     <td>${t.inDate||"—"}</td><td>${t.inTime||"—"}</td><td>${t.inQty!==""?t.inQty:"—"}</td>
     <td>${t.outDate||"—"}</td><td>${t.outTime||"—"}</td><td>${t.outQty!==""?t.outQty:"—"}</td>
-    <td>${wipBadge(t.wipRow)}</td><td>${wipBadge(t.cumulativeWip)}</td><td>${t.remarks||"—"}</td>
+    <td>${wipBadge(t.wipRow)}</td>
+    <td>${planStatusBadge(t.styleName,t.color,
+      (t.process==="BW"?bwTx:awTx).filter(r=>r.styleName===t.styleName&&r.color===t.color).reduce((a,r)=>a+(r.inQty||0),0),
+      t.cumulativeWip)}</td>
+    <td>${t.remarks||"—"}</td>
   </tr>`).join(""):`<tr><td colspan="16" class="no-data">No records found.</td></tr>`;
 }
 function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-factory"].forEach(id=>{document.getElementById(id).value=id==="tx-process"?"both":"";});renderAllTx();}
@@ -1877,7 +1881,9 @@ function renderTodayEntries(process){
     <td><strong>${tx.styleName}</strong></td><td>${tx.color}</td><td>${tx.factory}</td>
     <td>${tx.inDate||"—"}</td><td>${tx.inTime||"—"}</td><td>${tx.inQty!==""?tx.inQty:"—"}</td>
     <td>${tx.outDate||"—"}</td><td>${tx.outTime||"—"}</td><td>${tx.outQty!==""?tx.outQty:"—"}</td>
-    <td>${wipBadge(tx.wipRow)}</td><td>${wipBadge(tx.cumulativeWip)}</td>
+    <td>${wipBadge(tx.wipRow)}</td><td>${planStatusBadge(tx.styleName,tx.color,
+      (process==="bw"?bwTx:awTx).filter(t=>t.styleName===tx.styleName&&t.color===tx.color).reduce((a,t)=>a+(t.inQty||0),0),
+      tx.cumulativeWip)}</td>
     <td>${tx.remarks||"—"}</td>
     <td style="display:flex;gap:5px">
       <button class="btn-edit" onclick="openEditEntry('${process}','${tx.rowId}')">Edit</button>
