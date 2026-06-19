@@ -361,7 +361,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Total Entries</div><div class="kpi-val" id="bk-entries">0</div><div class="kpi-sub">In period</div></div>
-      <div class="kpi-card g"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="bk-cleared">0</div><div class="kpi-sub">WIP = 0</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="bk-cleared">0</div><div class="kpi-sub">WIP = 0 &amp; Plan fully done</div></div>
       <div class="kpi-card o"><div class="kpi-label">Highest WIP Style</div><div class="kpi-val" id="bk-top-style" style="font-size:14px;margin-top:7px">—</div><div class="kpi-sub" id="bk-top-style-sub"></div></div>
       <div class="kpi-card r"><div class="kpi-label">Factory — Most WIP</div><div class="kpi-val" id="bk-top-fac" style="font-size:20px;margin-top:5px">—</div><div class="kpi-sub" id="bk-top-fac-sub"></div></div>
     </div>
@@ -487,7 +487,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Total Entries</div><div class="kpi-val" id="ak-entries">0</div><div class="kpi-sub">In period</div></div>
-      <div class="kpi-card t"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="ak-cleared">0</div><div class="kpi-sub">WIP = 0</div></div>
+      <div class="kpi-card t"><div class="kpi-label">Styles Cleared</div><div class="kpi-val" id="ak-cleared">0</div><div class="kpi-sub">WIP = 0 &amp; Plan fully done</div></div>
       <div class="kpi-card o"><div class="kpi-label">Highest WIP Style</div><div class="kpi-val" id="ak-top-style" style="font-size:14px;margin-top:7px">—</div><div class="kpi-sub" id="ak-top-style-sub"></div></div>
       <div class="kpi-card r"><div class="kpi-label">Factory — Most WIP</div><div class="kpi-val" id="ak-top-fac" style="font-size:20px;margin-top:5px">—</div><div class="kpi-sub" id="ak-top-fac-sub"></div></div>
     </div>
@@ -632,7 +632,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg"><label>Factory</label>
         <select id="ws-factory" onchange="renderWIPSummary()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Status</label>
-        <select id="ws-status" onchange="renderWIPSummary()"><option value="">All</option><option value="open">Open WIP</option><option value="cleared">Cleared</option></select></div>
+        <select id="ws-status" onchange="renderWIPSummary()"><option value="">All</option><option value="open">Open WIP</option><option value="partial">Partially Cleared</option><option value="cleared">Fully Cleared</option></select></div>
     </div>
     <div class="section">
       <div class="section-hdr"><h3>WIP by Style</h3><span id="ws-count" style="font-size:11px;color:var(--grey)"></span></div>
@@ -1444,7 +1444,7 @@ function renderDashCommon(p,txArr,filteredTx){
   const totalIn=filteredTx.reduce((a,t)=>a+(t.inQty||0),0);
   const totalOut=filteredTx.reduce((a,t)=>a+(t.outQty||0),0);
   const openWIP=allWIP.filter(w=>w.wip>0);
-  const cleared=allWIP.filter(w=>w.wip===0&&(w.totalIn>0||w.totalOut>0));
+  const cleared=allWIP.filter(w=>getPlanStatus(w.styleName,w.color,w.totalIn,w.wip)==="cleared");
   setEl(`${p}-in`,totalIn);
   setEl(`${p}-out`,totalOut);
   setEl(`${p}-wip`,allWIP.reduce((a,w)=>a+Math.max(0,w.wip),0));
@@ -1502,7 +1502,8 @@ function renderDashCommon(p,txArr,filteredTx){
       const awWIPMap=getWIPMap(awTx);
       const awEntry=awWIPMap.find(a=>a.styleName.toLowerCase()===w.styleName.toLowerCase()&&a.color.toLowerCase()===w.color.toLowerCase());
       const inWashing=Math.max(0,(bwEntry?bwEntry.totalOut:0)-(awEntry?awEntry.totalIn:0));
-      return`<tr><td><span class="rank-num">${i+1}</span></td><td><strong>${w.styleName}</strong></td><td>${w.color}</td><td>${w.factory}</td><td>${w.totalIn}</td><td>${w.totalOut}</td><td>${wipBadge(w.wip)}</td><td>${inWashing>0?`<span class="badge bl">${inWashing}</span>`:`<span class="badge bz">0</span>`}</td><td>${w.firstDate||"—"}</td></tr>`;
+      const statusBadge=planStatusBadge(w.styleName,w.color,w.totalIn,w.wip);
+      return`<tr><td><span class="rank-num">${i+1}</span></td><td><strong>${w.styleName}</strong></td><td>${w.color}</td><td>${w.factory}</td><td>${w.totalIn}</td><td>${w.totalOut}</td><td>${statusBadge}</td><td>${inWashing>0?`<span class="badge bl">${inWashing}</span>`:`<span class="badge bz">0</span>`}</td><td>${w.firstDate||"—"}</td></tr>`;
     }).join(""):`<tr><td colspan="9" class="no-data">No data yet.</td></tr>`;
   }
 }
@@ -1654,7 +1655,7 @@ function renderProcessView(){
     } else stage=`<span style="color:var(--orange);font-weight:600">In Washing Dept</span>`;
     const inWash=Math.max(0,(bw.totalOut||0)-(aw.totalIn||0));
     const inWashBadge=inWash>0?`<span class="badge bl">${inWash}</span>`:`<span class="badge bz">0</span>`;
-    rows.push(`<tr><td><strong>${name}</strong></td><td>${color}</td><td>${factory}</td><td>${bw.totalIn}</td><td>${bw.totalOut}</td><td>${wipBadge(bw.wip)}</td><td>${inWashBadge}</td><td>${aw.totalIn}</td><td>${aw.totalOut}</td><td>${wipBadge(aw.wip)}</td><td>${stage}</td><td>${bw.firstDate||"—"}</td></tr>`);
+    rows.push(`<tr><td><strong>${name}</strong></td><td>${color}</td><td>${factory}</td><td>${bw.totalIn}</td><td>${bw.totalOut}</td><td>${planStatusBadge(name,color,bw.totalIn,bw.wip)}</td><td>${inWashBadge}</td><td>${aw.totalIn}</td><td>${aw.totalOut}</td><td>${planStatusBadge(name,color,aw.totalIn,aw.wip)}</td><td>${stage}</td><td>${bw.firstDate||"—"}</td></tr>`);
   });
   tbody.innerHTML=rows.length?rows.join(""):`<tr><td colspan="11" class="no-data">No data available.</td></tr>`;
 }
@@ -1669,7 +1670,8 @@ function renderWIPSummary(){
   if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
   if(fac) data=data.filter(d=>d.factory===fac);
   if(stat==="open") data=data.filter(d=>d.wip>0);
-  if(stat==="cleared") data=data.filter(d=>d.wip===0&&(d.totalIn>0||d.totalOut>0));
+  if(stat==="cleared") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="cleared");
+  if(stat==="partial") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="partial");
   data.sort((a,b)=>b.wip-a.wip);
   document.getElementById("ws-count").textContent=`${data.length} records`;
   const tbody=document.getElementById("ws-body");
@@ -1677,7 +1679,7 @@ function renderWIPSummary(){
     <td><span class="badge" style="background:${d.process==="Before Wash"?"var(--lblue)":"var(--lpurple)"};color:${d.process==="Before Wash"?"var(--blue)":"var(--purple)"}">${d.process}</span></td>
     <td><strong>${d.styleName}</strong></td><td>${d.color}</td><td>${d.factory}</td><td>${d.product}</td><td>${d.washType||"—"}</td>
     <td>${d.totalIn}</td><td>${d.totalOut}</td><td>${wipBadge(d.wip)}</td>
-    <td>${d.wip===0?'<span style="color:var(--green);font-weight:600">Cleared</span>':'<span style="color:var(--orange);font-weight:600">Pending</span>'}</td>
+    <td>${planStatusBadge(d.styleName,d.color,d.totalIn,d.wip)}</td>
   </tr>`).join(""):`<tr><td colspan="10" class="no-data">No records found.</td></tr>`;
 }
 
@@ -2254,6 +2256,30 @@ function clearPVAFilters(){
   document.getElementById("pva-filter-factory").value="";
   document.getElementById("pva-filter-status").value="";
   renderPlanActual();
+}
+
+function getEffectivePlanQty(styleName,color){
+  // Get the active plan as of today and return effective target qty
+  const plan=getActivePlan(styleName,color,today());
+  if(!plan) return null; // no plan
+  if(plan.manuallyCompleted) return plan.completedQty||plan.planQty;
+  return plan.planQty;
+}
+
+function getPlanStatus(styleName,color,totalIn,wip){
+  // Returns: "pending" | "partial" | "cleared"
+  const effectivePlan=getEffectivePlanQty(styleName,color);
+  if(wip>0) return "pending";
+  if(effectivePlan===null) return totalIn>0?"cleared":"pending"; // no plan fallback
+  if(totalIn>=effectivePlan) return "cleared";
+  return "partial";
+}
+
+function planStatusBadge(styleName,color,totalIn,wip){
+  const status=getPlanStatus(styleName,color,totalIn,wip);
+  if(status==="pending") return '<span class="badge bh">Pending</span>';
+  if(status==="partial") return '<span class="badge" style="background:#FFF8E1;color:#E65100;font-weight:700">⚠ Partially Cleared</span>';
+  return '<span class="badge bz">✅ Fully Cleared</span>';
 }
 
 function getActivePlan(styleName,color,asOfDate){
