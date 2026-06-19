@@ -2334,6 +2334,9 @@ function initQualityPage(){
   renderQCRecent();
 }
 
+function normD(d){ return d?String(d).slice(0,10):""; }
+function hasOut(t){ return t.outQty!==""&&t.outQty!==null&&t.outQty!==undefined&&Number(t.outQty)>0; }
+
 function onQCDateChange(){
   const date=document.getElementById("qc-date").value;
   const stylesSel=document.getElementById("qc-style");
@@ -2341,14 +2344,25 @@ function onQCDateChange(){
   document.getElementById("qc-color").innerHTML='<option value="">— Select Color —</option>';
   clearQCAutoFill();
   if(!date) return;
-  // Find styles that had AW OUT on this date
-  const awOuts=awTx.filter(t=>t.outDate===date&&t.outQty!=="");
+
+  // Debug — show what AW transactions exist
+  console.log("All AW TX outDates:", awTx.map(t=>({outDate:t.outDate,style:t.styleName,outQty:t.outQty})));
+
+  // Find styles that had AW OUT on this date — flexible comparison
+  const awOuts=awTx.filter(t=>normD(t.outDate)===normD(date)&&hasOut(t));
+  console.log("Matching AW outs for date",date,":", awOuts);
+
   const unique=[];
   const seen=new Set();
   awOuts.forEach(t=>{
     const k=t.styleName.toLowerCase();
     if(!seen.has(k)){seen.add(k);unique.push(t.styleName);}
   });
+
+  if(!unique.length){
+    stylesSel.innerHTML='<option value="">— No AW OUT entries for this date —</option>';
+    return;
+  }
   stylesSel.innerHTML='<option value="">— Select Style —</option>'+unique.map(s=>`<option value="${s}">${s}</option>`).join("");
 }
 
@@ -2359,7 +2373,10 @@ function onQCStyleChange(){
   colorSel.innerHTML='<option value="">— Select Color —</option>';
   clearQCAutoFill();
   if(!date||!styleName) return;
-  const colors=[...new Set(awTx.filter(t=>t.outDate===date&&t.outQty!==""&&t.styleName.toLowerCase()===styleName.toLowerCase()).map(t=>t.color))];
+  const colors=[...new Set(
+    awTx.filter(t=>normD(t.outDate)===normD(date)&&hasOut(t)&&t.styleName.toLowerCase()===styleName.toLowerCase())
+    .map(t=>t.color)
+  )];
   colorSel.innerHTML='<option value="">— Select Color —</option>'+colors.map(col=>`<option value="${col}">${col}</option>`).join("");
   if(colors.length===1){colorSel.value=colors[0];onQCColorChange();}
 }
@@ -2370,15 +2387,18 @@ function onQCColorChange(){
   const color=document.getElementById("qc-color").value;
   clearQCAutoFill();
   if(!date||!styleName||!color) return;
-  // Get AW OUT qty for this date+style+color
+  // Sum all AW OUT qty for this date+style+color
   const outQty=awTx
-    .filter(t=>t.outDate===date&&t.styleName.toLowerCase()===styleName.toLowerCase()&&t.color.toLowerCase()===color.toLowerCase()&&t.outQty!=="")
+    .filter(t=>normD(t.outDate)===normD(date)
+            &&t.styleName.toLowerCase()===styleName.toLowerCase()
+            &&t.color.toLowerCase()===color.toLowerCase()
+            &&hasOut(t))
     .reduce((a,t)=>a+Number(t.outQty),0);
   const s=getStyle(styleName,color);
   document.getElementById("qc-af-factory").textContent=s?s.factory:"—";
   document.getElementById("qc-af-product").textContent=s?s.product:"—";
   document.getElementById("qc-af-wash").textContent=s?s.washType:"—";
-  document.getElementById("qc-af-outqty").textContent=outQty||"—";
+  document.getElementById("qc-af-outqty").textContent=outQty>0?outQty:"No OUT qty found";
 }
 
 function clearQCAutoFill(){
