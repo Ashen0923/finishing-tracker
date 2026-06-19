@@ -322,6 +322,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <div class="ls">Last saved: <span id="last-saved">Not yet saved</span></div>
     <button id="sync-btn" onclick="saveToGitHub()">Save to GitHub</button>
     <div id="sync-status"></div>
+    <button onclick="downloadExcel()" style="width:100%;margin-top:8px;padding:9px;background:var(--teal);color:#fff;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">⬇ Download Excel</button>
   </div>
 </div>
 
@@ -1163,6 +1164,30 @@ function parseWB(wb){
       minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0
     })).filter(p=>p.styleName&&p.styleName!=="StyleName");
     console.log("Loaded plans:",monthlyPlans.length, monthlyPlans);
+  }
+}
+
+function downloadExcel(){
+  try{
+    const b64=buildExcel();
+    // Convert base64 to blob and trigger download
+    const binary=atob(b64);
+    const arr=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) arr[i]=binary.charCodeAt(i);
+    const blob=new Blob([arr],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    const now=new Date();
+    const dateStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+    a.download=`finishing_data_${dateStr}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }catch(e){
+    console.error("Download failed:",e);
+    alert("Download failed. Please try again.");
   }
 }
 
