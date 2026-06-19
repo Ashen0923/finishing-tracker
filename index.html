@@ -1005,6 +1005,28 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
 
     <!-- Main Table -->
+    <!-- Table Filters -->
+    <div class="filter-bar" style="margin-bottom:12px">
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="pva-tbl-style" placeholder="Search…" oninput="renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="pva-tbl-factory" onchange="renderPlanActual()">
+          <option value="">All Factories</option>
+          <option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option>
+        </select></div>
+      <div class="fg"><label>Status</label>
+        <select id="pva-tbl-status" onchange="renderPlanActual()">
+          <option value="">All</option>
+          <option value="progress">In Progress</option>
+          <option value="hold">Cannot Dispatch</option>
+          <option value="candispatch">Can Dispatch</option>
+          <option value="complete">Auto Complete</option>
+          <option value="manual">Manually Completed</option>
+          <option value="noplan">No Plan</option>
+        </select></div>
+      <button class="btn-clear" onclick="clearPVATableFilters()">Clear</button>
+    </div>
+
     <div class="section">
       <div class="section-hdr">
         <h3>Style-by-Style Plan vs Actual</h3>
@@ -1016,7 +1038,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
             <tr>
               <th>Style</th><th>Color</th><th>Factory</th><th>Plan Start</th><th>Plan End</th>
               <th>Plan Qty</th><th>Actual IN</th><th>Remaining</th>
-              <th>Progress</th><th>WIP</th><th>Min Dispatch</th><th>Can Dispatch</th>
+              <th>Progress</th><th>WIP</th><th>Min Dispatch</th><th>Can Dispatch</th><th>Action</th>
             </tr>
           </thead>
           <tbody id="pva-table-body"></tbody>
@@ -1162,7 +1184,10 @@ function parseWB(wb){
       color:cl(r.Color),
       startDate:cl(r.StartDate)||cl(r.Month)||"",
       planQty:r.PlanQty!==""?Number(r.PlanQty):0,
-      minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0
+      minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0,
+      manuallyCompleted:cl(r.ManuallyCompleted)==="Yes",
+      completedDate:cl(r.CompletedDate),
+      completedQty:r.CompletedQty!==""?Number(r.CompletedQty):0
     })).filter(p=>p.styleName&&p.styleName!=="StyleName");
     console.log("Loaded plans:",monthlyPlans.length, monthlyPlans);
   }
@@ -1235,10 +1260,13 @@ function buildExcel(){
   txSheet(awTx,"AfterWashTx");
 
   // Monthly Plan sheet
-  const planHeaders=["PlanKey","StyleName","Color","StartDate","PlanQty","MinDispatch"];
+  const planHeaders=["PlanKey","StyleName","Color","StartDate","PlanQty","MinDispatch","ManuallyCompleted","CompletedDate","CompletedQty"];
   const planRows=monthlyPlans.map(p=>({
     PlanKey:p.planKey,StyleName:p.styleName,Color:p.color,
-    StartDate:p.startDate,PlanQty:p.planQty,MinDispatch:p.minDispatch
+    StartDate:p.startDate,PlanQty:p.planQty,MinDispatch:p.minDispatch,
+    ManuallyCompleted:p.manuallyCompleted?"Yes":"No",
+    CompletedDate:p.completedDate||"",
+    CompletedQty:p.completedQty||0
   }));
   XLSX.utils.book_append_sheet(wb,makeSheet(planHeaders,planRows),"MonthlyPlan");
 
@@ -2122,7 +2150,10 @@ function addMonthlyPlan(){
     monthlyPlans.push({
       planKey,styleName,color,startDate,
       planQty:Number(planQty),
-      minDispatch:minDispatch!==""?Number(minDispatch):0
+      minDispatch:minDispatch!==""?Number(minDispatch):0,
+      manuallyCompleted:false,
+      completedDate:"",
+      completedQty:0
     });
     showAlert("plan-alert","Plan added. Remember to save to GitHub.","success");
   }
@@ -2146,6 +2177,39 @@ function deleteMonthlyPlan(planKey){
   monthlyPlans=monthlyPlans.filter(p=>p.planKey!==planKey);
   renderPlanActual();
   showAlert("plan-alert","Plan deleted. Remember to save to GitHub.","success");
+}
+
+function markPlanComplete(planKey,actualIn){
+  const idx=monthlyPlans.findIndex(p=>p.planKey===planKey);
+  if(idx===-1) return;
+  const p=monthlyPlans[idx];
+  if(!confirm(`Mark "${p.styleName} / ${p.color}" as manually completed?\n\nActual IN: ${actualIn} / Plan: ${p.planQty}\n\nThis means no more pieces are expected from the supplier.`)) return;
+  monthlyPlans[idx].manuallyCompleted=true;
+  monthlyPlans[idx].completedDate=today();
+  monthlyPlans[idx].completedQty=actualIn;
+  showAlert("plan-alert","Style marked as manually completed. Remember to save to GitHub.","success");
+  renderPlanActual();
+  refreshDashboards();
+}
+
+function undoPlanComplete(planKey){
+  const idx=monthlyPlans.findIndex(p=>p.planKey===planKey);
+  if(idx===-1) return;
+  if(!confirm("Undo manual completion? Style will return to In Progress.")) return;
+  monthlyPlans[idx].manuallyCompleted=false;
+  monthlyPlans[idx].completedDate="";
+  monthlyPlans[idx].completedQty=0;
+  showAlert("plan-alert","Manual completion undone. Remember to save to GitHub.","success");
+  renderPlanActual();
+  refreshDashboards();
+}
+
+function clearPVATableFilters(){
+  ["pva-tbl-style","pva-tbl-factory","pva-tbl-status"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value="";
+  });
+  renderPlanActual();
 }
 
 function clearPVAFilters(){
@@ -2234,8 +2298,10 @@ function renderPlanActual(){
     const remaining=Math.max(0,activePlan.planQty-actualIn);
     const pct=activePlan.planQty>0?Math.round((actualIn/activePlan.planQty)*100):0;
 
+    const isManual=activePlan.manuallyCompleted||false;
     let dispatchStatus="progress";
-    if(actualIn>=activePlan.planQty&&wip===0) dispatchStatus="complete";
+    if(isManual) dispatchStatus="manual";
+    else if(actualIn>=activePlan.planQty&&wip===0) dispatchStatus="complete";
     else if(minD>0&&wip>0&&wip<minD) dispatchStatus="hold";
     else if(minD>0&&wip>=minD) dispatchStatus="candispatch";
 
@@ -2244,12 +2310,23 @@ function renderPlanActual(){
     rows.push({styleName:s.styleName,color:s.color,factory:s.factory,
       startDate:activePlan.startDate,endDate:activePlan.endDate,
       planQty:activePlan.planQty,actualIn,remaining,pct,
-      wip,minD,dispatchStatus,planKey:activePlan.planKey});
+      wip,minD,dispatchStatus,planKey:activePlan.planKey,
+      manuallyCompleted:isManual,
+      completedDate:activePlan.completedDate||"",
+      completedQty:activePlan.completedQty||0});
   });
 
-  // Sort — hold first, then by pct ascending
+  // Apply table filters
+  const tblStyle=document.getElementById("pva-tbl-style")?document.getElementById("pva-tbl-style").value.toLowerCase():"";
+  const tblFactory=document.getElementById("pva-tbl-factory")?document.getElementById("pva-tbl-factory").value:"";
+  const tblStatus=document.getElementById("pva-tbl-status")?document.getElementById("pva-tbl-status").value:"";
+  if(tblStyle) rows=rows.filter(r=>r.styleName.toLowerCase().includes(tblStyle));
+  if(tblFactory) rows=rows.filter(r=>r.factory===tblFactory);
+  if(tblStatus) rows=rows.filter(r=>r.dispatchStatus===tblStatus||(tblStatus==="manual"&&r.manuallyCompleted));
+
+  // Sort — hold first, manual complete last
   rows.sort((a,b)=>{
-    const order={hold:0,noplan:1,progress:2,candispatch:3,complete:4};
+    const order={hold:0,noplan:1,progress:2,candispatch:3,complete:4,manual:5};
     return (order[a.dispatchStatus]||2)-(order[b.dispatchStatus]||2);
   });
 
@@ -2304,14 +2381,31 @@ function renderPlanActual(){
 
     let dispBadge="—";
     if(r.dispatchStatus==="noplan") dispBadge='<span class="badge" style="background:#f0f0f0;color:#888">No Plan</span>';
-    else if(r.dispatchStatus==="complete") dispBadge='<span class="badge bz">✅ Complete</span>';
+    else if(r.dispatchStatus==="manual") dispBadge='<span class="badge" style="background:#E8F5E9;color:#2E7D32">✅ Manually Completed</span>';
+    else if(r.dispatchStatus==="complete") dispBadge='<span class="badge bz">✅ Auto Complete</span>';
     else if(r.dispatchStatus==="hold") dispBadge='<span class="hold-badge">⚠ HOLD</span>';
     else if(r.dispatchStatus==="candispatch") dispBadge='<span class="badge" style="background:#E8F5E9;color:#2E7D32">✅ Can Dispatch</span>';
     else if(r.minD===0) dispBadge='<span class="badge" style="background:#fff8e1;color:#f57f17">No Min Set</span>';
 
+    // WIP dispatch check — still applies even if manually completed
+    let dispatchBadge=dispBadge;
+    if(r.manuallyCompleted&&r.minD>0&&r.wip>0&&r.wip<r.minD){
+      dispatchBadge+=' <span class="hold-badge" style="margin-left:4px">⚠ HOLD</span>';
+    }
+
     const endDisp=r.endDate==="ongoing"?'<span style="color:var(--teal);font-weight:600">Ongoing</span>':r.endDate;
 
-    return`<tr>
+    // Action button
+    let actionBtn="—";
+    if(r.planKey){
+      if(r.manuallyCompleted){
+        actionBtn=`<button class="btn btn-ghost btn-sm" onclick="undoPlanComplete('${r.planKey}')">Undo</button>`;
+      } else if(r.dispatchStatus!=="complete"&&r.dispatchStatus!=="noplan"){
+        actionBtn=`<button class="btn btn-success btn-sm" onclick="markPlanComplete('${r.planKey}',${r.actualIn})">Mark Complete</button>`;
+      }
+    }
+
+    return`<tr${r.manuallyCompleted?' style="background:#F1F8F1"':""}>
       <td><strong>${r.styleName}</strong></td>
       <td>${r.color}</td>
       <td>${r.factory||"—"}</td>
@@ -2323,7 +2417,8 @@ function renderPlanActual(){
       <td style="min-width:160px">${progressBar}</td>
       <td>${wipBadge(r.wip)}</td>
       <td>${r.minD>0?r.minD:"—"}</td>
-      <td>${dispBadge}</td>
+      <td>${dispatchBadge}</td>
+      <td>${actionBtn}</td>
     </tr>`;
   }).join(""):`<tr><td colspan="12" class="no-data">No styles found.</td></tr>`;
 
