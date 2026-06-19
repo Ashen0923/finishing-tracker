@@ -604,7 +604,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="kpi-row">
       <div class="kpi-card"><div class="kpi-label">Total Styles in System</div><div class="kpi-val" id="proc-total-styles">0</div></div>
-      <div class="kpi-card g"><div class="kpi-label">Fully Cleared Styles</div><div class="kpi-val" id="proc-cleared">0</div><div class="kpi-sub">BW WIP = 0, In Washing = 0, AW WIP = 0</div></div>
+      <div class="kpi-card g"><div class="kpi-label">Fully Cleared Styles</div><div class="kpi-val" id="proc-cleared">0</div><div class="kpi-sub">Qty cleared + Plan 100% or manually confirmed</div></div>
       <div class="kpi-card o"><div class="kpi-label">Longest Pending Style</div><div class="kpi-val" id="proc-oldest" style="font-size:14px;margin-top:7px">&#8212;</div></div>
       <div class="kpi-card r"><div class="kpi-label">Factory — Most Total WIP</div><div class="kpi-val" id="proc-top-fac" style="font-size:20px;margin-top:5px">&#8212;</div></div>
     </div>
@@ -1574,8 +1574,31 @@ function renderProcessView(){
     const bwOut=bw?bw.totalOut:0;
     const awIn=aw?aw.totalIn:0;
     const inWashing=Math.max(0,bwOut-awIn);
-    // Fully cleared = BW WIP=0 AND nothing in washing AND AW WIP=0
-    if(bwWip===0&&inWashing===0&&awWip===0) fullyCleared++;
+    const totalActualIn=bw?bw.totalIn:0;
+
+    // Check quantity flow
+    const quantityCleared=bwWip===0&&inWashing===0&&awWip===0;
+    if(!quantityCleared) return;
+
+    // Check plan completion
+    // Find active plan for this style+color as of today
+    const styleName=bw?bw.styleName:(aw?aw.styleName:"");
+    const color=bw?bw.color:(aw?aw.color:"");
+    const activePlan=getActivePlan(styleName,color,today());
+
+    let planCleared=false;
+    if(activePlan){
+      if(activePlan.manuallyCompleted){
+        // Manual: effective target = completedQty
+        const effectiveTarget=activePlan.completedQty||activePlan.planQty;
+        planCleared=totalActualIn>=effectiveTarget;
+      } else {
+        // Auto: actual IN must equal plan qty
+        planCleared=totalActualIn>=activePlan.planQty&&activePlan.planQty>0;
+      }
+    }
+    // No plan = not cleared (all styles will have a plan)
+    if(quantityCleared&&planCleared) fullyCleared++;
   });
   document.getElementById("proc-cleared").textContent=fullyCleared;
 
@@ -1613,8 +1636,22 @@ function renderProcessView(){
     if(bw.wip>0) stage=`<span style="color:var(--blue);font-weight:600">BW WIP — In Finishing</span>`;
     else if(Math.max(0,(bw.totalOut||0)-(aw.totalIn||0))>0) stage=`<span style="color:var(--purple);font-weight:600">In Washing Dept</span>`;
     else if(aw.wip>0) stage=`<span style="color:var(--teal);font-weight:600">AW WIP — In Finishing</span>`;
-    else if(inWash===0) stage=`<span style="color:var(--green);font-weight:600">Fully Cleared — Back to Factory</span>`;
-    else stage=`<span style="color:var(--orange);font-weight:600">In Washing Dept</span>`;
+    else if(inWash===0){
+      // Check plan completion for this style
+      const activePlan2=getActivePlan(name,color,today());
+      let planDone=false;
+      if(activePlan2){
+        if(activePlan2.manuallyCompleted){
+          const effTarget=activePlan2.completedQty||activePlan2.planQty;
+          planDone=(bw.totalIn||0)>=effTarget;
+        } else {
+          planDone=activePlan2.planQty>0&&(bw.totalIn||0)>=activePlan2.planQty;
+        }
+      }
+      stage=planDone
+        ?`<span style="color:var(--green);font-weight:600">✅ Fully Cleared</span>`
+        :`<span style="color:#546E7A;font-weight:600">Qty Cleared — Plan Pending</span>`;
+    } else stage=`<span style="color:var(--orange);font-weight:600">In Washing Dept</span>`;
     const inWash=Math.max(0,(bw.totalOut||0)-(aw.totalIn||0));
     const inWashBadge=inWash>0?`<span class="badge bl">${inWash}</span>`:`<span class="badge bz">0</span>`;
     rows.push(`<tr><td><strong>${name}</strong></td><td>${color}</td><td>${factory}</td><td>${bw.totalIn}</td><td>${bw.totalOut}</td><td>${wipBadge(bw.wip)}</td><td>${inWashBadge}</td><td>${aw.totalIn}</td><td>${aw.totalOut}</td><td>${wipBadge(aw.wip)}</td><td>${stage}</td><td>${bw.firstDate||"—"}</td></tr>`);
