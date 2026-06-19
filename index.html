@@ -2821,7 +2821,10 @@ function renderQCRecent(){
       <td>${q.repairable}</td><td>${q.nonRepairable}</td>
       <td><span class="badge bz">${goodRate}%</span></td>
       <td><span class="badge ${damRate>5?"bh":"bl"}">${damRate}%</span></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteQualityEntry('${q.qualityId}')">Delete</button></td>
+      <td style="display:flex;gap:5px">
+        <button class="btn-edit" onclick="openEditQC('${q.qualityId}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteQualityEntry('${q.qualityId}')">Delete</button>
+      </td>
     </tr>`;
   }).join(""):`<tr><td colspan="12" class="no-data">No quality entries yet.</td></tr>`;
 }
