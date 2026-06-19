@@ -1297,7 +1297,8 @@ function parseWB(wb){
       minDispatch:r.MinDispatch!==""?Number(r.MinDispatch):0,
       manuallyCompleted:cl(r.ManuallyCompleted)==="Yes",
       completedDate:cl(r.CompletedDate),
-      completedQty:r.CompletedQty!==""?Number(r.CompletedQty):0
+      completedQty:r.CompletedQty!==""?Number(r.CompletedQty):0,
+      originalPlanQty:r.OriginalPlanQty!==""&&r.OriginalPlanQty!==undefined?Number(r.OriginalPlanQty):0
     })).filter(p=>p.styleName&&p.styleName!=="StyleName");
     console.log("Loaded plans:",monthlyPlans.length, monthlyPlans);
   }
@@ -1370,13 +1371,14 @@ function buildExcel(){
   txSheet(awTx,"AfterWashTx");
 
   // Monthly Plan sheet
-  const planHeaders=["PlanKey","StyleName","Color","StartDate","PlanQty","MinDispatch","ManuallyCompleted","CompletedDate","CompletedQty"];
+  const planHeaders=["PlanKey","StyleName","Color","StartDate","PlanQty","MinDispatch","ManuallyCompleted","CompletedDate","CompletedQty","OriginalPlanQty"];
   const planRows=monthlyPlans.map(p=>({
     PlanKey:p.planKey,StyleName:p.styleName,Color:p.color,
     StartDate:p.startDate,PlanQty:p.planQty,MinDispatch:p.minDispatch,
     ManuallyCompleted:p.manuallyCompleted?"Yes":"No",
     CompletedDate:p.completedDate||"",
-    CompletedQty:p.completedQty||0
+    CompletedQty:p.completedQty||0,
+    OriginalPlanQty:p.originalPlanQty||p.planQty||0
   }));
   XLSX.utils.book_append_sheet(wb,makeSheet(planHeaders,planRows),"MonthlyPlan");
 
@@ -2334,6 +2336,7 @@ function addMonthlyPlan(){
     monthlyPlans.push({
       planKey,styleName,color,startDate,
       planQty:Number(planQty),
+      originalPlanQty:Number(planQty),
       minDispatch:minDispatch!==""?Number(minDispatch):0,
       manuallyCompleted:false,
       completedDate:"",
@@ -2437,6 +2440,10 @@ function saveEditPlan(){
 
   monthlyPlans[idx].startDate=startDate;
   monthlyPlans[idx].planQty=Number(planQty);
+  // Only update originalPlanQty if not manually completed
+  if(!monthlyPlans[idx].manuallyCompleted){
+    monthlyPlans[idx].originalPlanQty=Number(planQty);
+  }
   monthlyPlans[idx].minDispatch=minDispatch!==""?Number(minDispatch):0;
   monthlyPlans[idx].planKey=newKey;
 
@@ -2468,6 +2475,10 @@ function markPlanComplete(planKey,actualIn){
     "Mark Complete",
     "var(--green)",
     ()=>{
+      // Store original plan qty before overwriting
+      if(!monthlyPlans[idx].originalPlanQty){
+        monthlyPlans[idx].originalPlanQty=monthlyPlans[idx].planQty;
+      }
       monthlyPlans[idx].manuallyCompleted=true;
       monthlyPlans[idx].completedDate=today();
       monthlyPlans[idx].completedQty=actualIn;
@@ -2495,7 +2506,11 @@ function undoPlanComplete(planKey){
       monthlyPlans[idx].manuallyCompleted=false;
       monthlyPlans[idx].completedDate="";
       monthlyPlans[idx].completedQty=0;
-      showAlert("plan-alert","Manual completion undone. Remember to save to GitHub.","success");
+      // Restore original plan qty
+      if(monthlyPlans[idx].originalPlanQty){
+        monthlyPlans[idx].planQty=monthlyPlans[idx].originalPlanQty;
+      }
+      showAlert("plan-alert","Manual completion undone. Plan quantity restored to original. Remember to save to GitHub.","success");
       renderPlanActual();
       refreshDashboards();
     }
