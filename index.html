@@ -254,6 +254,23 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div id="confirm-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-hdr" style="background:var(--green)" id="confirm-modal-hdr">
+      <h3 id="confirm-modal-title">Confirm Action</h3>
+      <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="confirm-modal-body" style="font-size:13px;color:var(--grey);line-height:1.7;margin-bottom:18px"></div>
+      <div class="btn-row">
+        <button id="confirm-modal-ok" class="btn btn-success" onclick="confirmModalOK()">Confirm</button>
+        <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT MONTHLY PLAN MODAL -->
 <div id="edit-plan-modal" class="modal-overlay" style="display:none">
   <div class="modal-box" style="max-width:500px">
@@ -2340,14 +2357,44 @@ function addMonthlyPlan(){
 }
 
 function deleteMonthlyPlan(planKey){
-  if(!confirm("Delete this monthly plan?")) return;
-  monthlyPlans=monthlyPlans.filter(p=>p.planKey!==planKey);
-  renderPlanActual();
-  showAlert("plan-alert","Plan deleted. Remember to save to GitHub.","success");
+  const p=monthlyPlans.find(pl=>pl.planKey===planKey);
+  if(!p) return;
+  showConfirmModal(
+    "Delete Monthly Plan",
+    `Delete plan for <strong>${p.styleName} / ${p.color}</strong> (Start: ${p.startDate})?<br><br>
+     <span style="color:var(--red)">This action cannot be undone.</span>`,
+    "Delete",
+    "var(--red)",
+    ()=>{
+      monthlyPlans=monthlyPlans.filter(pl=>pl.planKey!==planKey);
+      renderPlanActual();
+      showAlert("plan-alert","Plan deleted. Remember to save to GitHub.","success");
+    }
+  );
 }
 
 // ── EDIT MONTHLY PLAN ────────────────────────────────
 let editPlanKey=null;
+let confirmModalCallback=null;
+
+function showConfirmModal(title,body,btnLabel,btnColor,onConfirm){
+  document.getElementById("confirm-modal-title").textContent=title;
+  document.getElementById("confirm-modal-body").innerHTML=body;
+  document.getElementById("confirm-modal-hdr").style.background=btnColor||"var(--green)";
+  const okBtn=document.getElementById("confirm-modal-ok");
+  okBtn.textContent=btnLabel||"Confirm";
+  okBtn.style.background=btnColor||"var(--green)";
+  confirmModalCallback=onConfirm;
+  document.getElementById("confirm-modal").style.display="flex";
+}
+function closeConfirmModal(){
+  document.getElementById("confirm-modal").style.display="none";
+  confirmModalCallback=null;
+}
+function confirmModalOK(){
+  if(confirmModalCallback) confirmModalCallback();
+  closeConfirmModal();
+}
 
 function openEditPlan(key){
   const p=monthlyPlans.find(pl=>pl.planKey===key);
@@ -2409,25 +2456,50 @@ function markPlanComplete(planKey,actualIn){
   const idx=monthlyPlans.findIndex(p=>p.planKey===planKey);
   if(idx===-1) return;
   const p=monthlyPlans[idx];
-  if(!confirm(`Mark "${p.styleName} / ${p.color}" as manually completed?\n\nActual IN: ${actualIn} / Plan: ${p.planQty}\n\nThis means no more pieces are expected from the supplier.`)) return;
-  monthlyPlans[idx].manuallyCompleted=true;
-  monthlyPlans[idx].completedDate=today();
-  monthlyPlans[idx].completedQty=actualIn;
-  showAlert("plan-alert","Style marked as manually completed. Remember to save to GitHub.","success");
-  renderPlanActual();
-  refreshDashboards();
+  showConfirmModal(
+    "Mark as Manually Completed",
+    `<strong>${p.styleName} / ${p.color}</strong><br><br>
+     <table style="width:100%;font-size:13px">
+       <tr><td style="color:var(--grey)">Original Plan Qty:</td><td><strong>${p.planQty.toLocaleString()}</strong></td></tr>
+       <tr><td style="color:var(--grey)">Actual IN so far:</td><td><strong>${actualIn.toLocaleString()}</strong></td></tr>
+       <tr><td style="color:var(--grey)">Difference:</td><td><strong style="color:var(--red)">${(p.planQty-actualIn).toLocaleString()} pieces short</strong></td></tr>
+     </table><br>
+     <span style="color:var(--grey)">The plan quantity will be updated to <strong>${actualIn.toLocaleString()}</strong> (actual IN) and this style will be marked as complete.</span>`,
+    "Mark Complete",
+    "var(--green)",
+    ()=>{
+      monthlyPlans[idx].manuallyCompleted=true;
+      monthlyPlans[idx].completedDate=today();
+      monthlyPlans[idx].completedQty=actualIn;
+      // Update planQty to actualIn so progress bar shows 100%
+      monthlyPlans[idx].planQty=actualIn;
+      showAlert("plan-alert","Style marked as manually completed. Plan updated to "+actualIn+". Remember to save to GitHub.","success");
+      renderPlanActual();
+      refreshDashboards();
+    }
+  );
 }
 
 function undoPlanComplete(planKey){
   const idx=monthlyPlans.findIndex(p=>p.planKey===planKey);
   if(idx===-1) return;
-  if(!confirm("Undo manual completion? Style will return to In Progress.")) return;
-  monthlyPlans[idx].manuallyCompleted=false;
-  monthlyPlans[idx].completedDate="";
-  monthlyPlans[idx].completedQty=0;
-  showAlert("plan-alert","Manual completion undone. Remember to save to GitHub.","success");
-  renderPlanActual();
-  refreshDashboards();
+  const p=monthlyPlans[idx];
+  showConfirmModal(
+    "Undo Manual Completion",
+    `<strong>${p.styleName} / ${p.color}</strong><br><br>
+     This will revert the style back to <strong>In Progress</strong>.<br>
+     The plan quantity will remain at <strong>${p.planQty.toLocaleString()}</strong>.`,
+    "Undo Completion",
+    "var(--orange)",
+    ()=>{
+      monthlyPlans[idx].manuallyCompleted=false;
+      monthlyPlans[idx].completedDate="";
+      monthlyPlans[idx].completedQty=0;
+      showAlert("plan-alert","Manual completion undone. Remember to save to GitHub.","success");
+      renderPlanActual();
+      refreshDashboards();
+    }
+  );
 }
 
 function clearPVATableFilters(){
