@@ -254,6 +254,55 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
 </div>
 
+<!-- EDIT QUALITY MODAL -->
+<div id="edit-qc-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:700px">
+    <div class="modal-hdr" style="background:#4A148C">
+      <h3 id="edit-qc-title">Edit Quality Entry</h3>
+      <button class="modal-close" onclick="closeEditQC()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="edit-qc-alert"></div>
+      <div style="background:var(--lgrey);border-radius:8px;padding:12px 16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="edit-qc-info"></div>
+      <div class="divider" style="margin:0 0 14px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+        <div class="qc-panel good">
+          <div class="qc-panel-title">Good Garments</div>
+          <div class="fg2"><label>Good Qty</label><input type="number" id="eq-good" min="0" oninput="onEQCalc()"/></div>
+        </div>
+        <div class="qc-panel damage">
+          <div class="qc-panel-title">Damage Garments</div>
+          <div class="field-group col2" style="margin-bottom:0">
+            <div class="fg2"><label>Damage Qty</label><input type="number" id="eq-damage" min="0" oninput="onEQCalc()"/></div>
+            <div class="fg2"><label>Repairable</label><input type="number" id="eq-repairable" min="0" oninput="onEQCalc()"/></div>
+          </div>
+          <div style="margin-top:8px"><div class="qc-auto-lbl">Non-Repairable (auto)</div><div class="qc-auto-val" id="eq-non-rep" style="font-size:18px">—</div></div>
+        </div>
+      </div>
+      <div id="eq-val-bar" style="display:none;margin-bottom:12px"></div>
+      <div class="qc-panel types">
+        <div class="qc-panel-title">Damage Type Breakdown</div>
+        <div class="field-group" style="grid-template-columns:repeat(4,1fr)">
+          <div class="fg2"><label>Cut Damage</label><input type="number" id="eq-cut" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Fabric Damage</label><input type="number" id="eq-fabric" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Stripped</label><input type="number" id="eq-stripped" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Open Stitch</label><input type="number" id="eq-open-stitch" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Removable Stain</label><input type="number" id="eq-rem-stain" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Non-Removable Stain</label><input type="number" id="eq-non-rem-stain" min="0" oninput="onEQTypeCalc()"/></div>
+          <div class="fg2"><label>Other — Type</label><input type="text" id="eq-other-type"/></div>
+          <div class="fg2"><label>Other — Qty</label><input type="number" id="eq-other-qty" min="0" oninput="onEQTypeCalc()"/></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;font-weight:700" id="eq-types-status"></div>
+      </div>
+      <div class="fg2" style="margin-top:14px"><label>Remarks</label><input type="text" id="eq-remarks"/></div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-purple" onclick="saveEditQC()">Save Changes</button>
+        <button class="btn btn-ghost" onclick="closeEditQC()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT ENTRY MODAL -->
 <div id="edit-entry-modal" class="modal-overlay" style="display:none">
   <div class="modal-box">
@@ -612,8 +661,23 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="chart-box"><h4>WIP by Stage</h4><canvas id="proc-chart-stage"></canvas></div>
       <div class="chart-box"><h4>Total WIP by Factory (All Stages)</h4><canvas id="proc-chart-fac"></canvas></div>
     </div>
+    <div class="filter-bar">
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="proc-filter-style" placeholder="Search style…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="proc-filter-factory" onchange="renderProcessView()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Stage</label>
+        <select id="proc-filter-stage" onchange="renderProcessView()">
+          <option value="">All</option>
+          <option value="bw">BW WIP — In Finishing</option>
+          <option value="washing">In Washing Dept</option>
+          <option value="aw">AW WIP — In Finishing</option>
+          <option value="cleared">Fully Cleared</option>
+        </select></div>
+      <button class="btn-clear" onclick="clearProcFilters()">Clear</button>
+    </div>
     <div class="section">
-      <div class="section-hdr"><h3>Style-by-Style Process Status</h3></div>
+      <div class="section-hdr"><h3>Style-by-Style Process Status</h3><span id="proc-table-count" style="font-size:11px;color:var(--grey)"></span></div>
       <div class="tbl-wrap" style="max-height:400px;overflow-y:auto"><table>
         <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>BW Total IN</th><th>BW Total OUT</th><th>BW WIP<br><small>(In Finishing)</small></th><th>In Washing</th><th>AW Total IN</th><th>AW Total OUT</th><th>AW WIP<br><small>(In Finishing)</small></th><th>Current Stage</th><th>Since</th></tr></thead>
         <tbody id="proc-table-body"></tbody>
@@ -629,10 +693,13 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <div class="filter-bar">
       <div class="fg"><label>Process</label>
         <select id="ws-process" onchange="renderWIPSummary()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="ws-style" placeholder="Search style…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="ws-factory" onchange="renderWIPSummary()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Status</label>
         <select id="ws-status" onchange="renderWIPSummary()"><option value="">All</option><option value="open">Open WIP</option><option value="partial">Partially Cleared</option><option value="cleared">Fully Cleared</option></select></div>
+      <button class="btn-clear" onclick="clearWIPFilters()">Clear</button>
     </div>
     <div class="section">
       <div class="section-hdr"><h3>WIP by Style</h3><span id="ws-count" style="font-size:11px;color:var(--grey)"></span></div>
@@ -1625,6 +1692,9 @@ function renderProcessView(){
   makeChart("proc-chart-fac","bar",{labels:factories,datasets:[{label:"Total WIP",data:facTotals,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2"],borderRadius:4}]});
 
   // Table
+  const procStyleF=document.getElementById("proc-filter-style")?document.getElementById("proc-filter-style").value.toLowerCase():"";
+  const procFacF=document.getElementById("proc-filter-factory")?document.getElementById("proc-filter-factory").value:"";
+  const procStageF=document.getElementById("proc-filter-stage")?document.getElementById("proc-filter-stage").value:"";
   const tbody=document.getElementById("proc-table-body");
   const rows=[];
   allStyles.forEach(k=>{
@@ -1655,6 +1725,16 @@ function renderProcessView(){
     } else stage=`<span style="color:var(--orange);font-weight:600">In Washing Dept</span>`;
     const inWash=Math.max(0,(bw.totalOut||0)-(aw.totalIn||0));
     const inWashBadge=inWash>0?`<span class="badge bl">${inWash}</span>`:`<span class="badge bz">0</span>`;
+    // Apply table filters
+    if(procStyleF&&!name.toLowerCase().includes(procStyleF)) return;
+    if(procFacF&&factory!==procFacF) return;
+    if(procStageF){
+      const stageText=stage.toLowerCase();
+      if(procStageF==="bw"&&!stageText.includes("finishing")&&!stageText.includes("bw wip")) return;
+      if(procStageF==="washing"&&!stageText.includes("washing dept")) return;
+      if(procStageF==="aw"&&!stageText.includes("aw wip")) return;
+      if(procStageF==="cleared"&&!stageText.includes("fully cleared")) return;
+    }
     rows.push(`<tr><td><strong>${name}</strong></td><td>${color}</td><td>${factory}</td><td>${bw.totalIn}</td><td>${bw.totalOut}</td><td>${planStatusBadge(name,color,bw.totalIn,bw.wip)}</td><td>${inWashBadge}</td><td>${aw.totalIn}</td><td>${aw.totalOut}</td><td>${planStatusBadge(name,color,aw.totalIn,aw.wip)}</td><td>${stage}</td><td>${bw.firstDate||"—"}</td></tr>`);
   });
   tbody.innerHTML=rows.length?rows.join(""):`<tr><td colspan="11" class="no-data">No data available.</td></tr>`;
@@ -1663,11 +1743,13 @@ function renderProcessView(){
 // ── WIP SUMMARY ────────────────────────────────────────
 function renderWIPSummary(){
   const proc=document.getElementById("ws-process").value;
+  const styleF=document.getElementById("ws-style")?document.getElementById("ws-style").value.toLowerCase():"";
   const fac=document.getElementById("ws-factory").value;
   const stat=document.getElementById("ws-status").value;
   let data=[];
   if(proc==="both"||proc==="bw") getWIPMap(bwTx).forEach(w=>data.push({...w,process:"Before Wash"}));
   if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
+  if(styleF) data=data.filter(d=>d.styleName.toLowerCase().includes(styleF));
   if(fac) data=data.filter(d=>d.factory===fac);
   if(stat==="open") data=data.filter(d=>d.wip>0);
   if(stat==="cleared") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="cleared");
@@ -1710,6 +1792,20 @@ function renderAllTx(){
       t.cumulativeWip)}</td>
     <td>${t.remarks||"—"}</td>
   </tr>`).join(""):`<tr><td colspan="16" class="no-data">No records found.</td></tr>`;
+}
+function clearProcFilters(){
+  ["proc-filter-style","proc-filter-factory","proc-filter-stage"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value="";
+  });
+  renderProcessView();
+}
+function clearWIPFilters(){
+  ["ws-style","ws-factory","ws-status","ws-process"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value=id==="ws-process"?"both":"";
+  });
+  renderWIPSummary();
 }
 function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-factory"].forEach(id=>{document.getElementById(id).value=id==="tx-process"?"both":"";});renderAllTx();}
 
@@ -2857,7 +2953,10 @@ function renderQCRecords(){
     <td>${q.openStitch||"—"}</td><td>${q.removableStain||"—"}</td><td>${q.nonRemovableStain||"—"}</td>
     <td>${q.otherDamageType||"—"}</td><td>${q.otherDamageQty||"—"}</td>
     <td>${q.remarks||"—"}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="deleteQualityEntry('${q.qualityId}')">Delete</button></td>
+    <td style="display:flex;gap:5px">
+      <button class="btn-edit" onclick="openEditQC('${q.qualityId}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteQualityEntry('${q.qualityId}')">Delete</button>
+    </td>
   </tr>`).join(""):`<tr><td colspan="20" class="no-data">No records found.</td></tr>`;
 }
 
@@ -2866,6 +2965,114 @@ function clearQCRecordFilters(){
   renderQCRecords();
 }
 
+
+// ── EDIT QUALITY CHECK ───────────────────────────────
+let editQCId=null;
+
+function openEditQC(id){
+  const q=qualityChecks.find(q=>q.qualityId===id);
+  if(!q)return;
+  editQCId=id;
+  document.getElementById("edit-qc-title").textContent=`Edit Quality Entry — ${q.styleName} / ${q.color} (${q.date})`;
+  document.getElementById("edit-qc-info").innerHTML=`
+    <div class="af-item"><div class="af-lbl">Style</div><div class="af-val">${q.styleName}</div></div>
+    <div class="af-item"><div class="af-lbl">Color</div><div class="af-val">${q.color}</div></div>
+    <div class="af-item"><div class="af-lbl">Date</div><div class="af-val">${q.date}</div></div>
+    <div class="af-item"><div class="af-lbl">Out Qty</div><div class="af-val">${q.outQty}</div></div>`;
+  document.getElementById("eq-good").value=q.good||0;
+  document.getElementById("eq-damage").value=q.damage||0;
+  document.getElementById("eq-repairable").value=q.repairable||0;
+  document.getElementById("eq-non-rep").textContent=q.nonRepairable||0;
+  document.getElementById("eq-cut").value=q.cutDamage||0;
+  document.getElementById("eq-fabric").value=q.fabricDamage||0;
+  document.getElementById("eq-stripped").value=q.stripped||0;
+  document.getElementById("eq-open-stitch").value=q.openStitch||0;
+  document.getElementById("eq-rem-stain").value=q.removableStain||0;
+  document.getElementById("eq-non-rem-stain").value=q.nonRemovableStain||0;
+  document.getElementById("eq-other-type").value=q.otherDamageType||"";
+  document.getElementById("eq-other-qty").value=q.otherDamageQty||0;
+  document.getElementById("eq-remarks").value=q.remarks||"";
+  document.getElementById("edit-qc-alert").innerHTML="";
+  document.getElementById("eq-val-bar").style.display="none";
+  document.getElementById("eq-types-status").textContent="";
+  document.getElementById("edit-qc-modal").style.display="flex";
+}
+
+function closeEditQC(){
+  document.getElementById("edit-qc-modal").style.display="none";
+  editQCId=null;
+}
+
+function onEQCalc(){
+  const damage=Number(document.getElementById("eq-damage").value)||0;
+  const repairable=Number(document.getElementById("eq-repairable").value)||0;
+  document.getElementById("eq-non-rep").textContent=Math.max(0,damage-repairable);
+  const q=qualityChecks.find(q=>q.qualityId===editQCId);
+  const outQty=q?q.outQty:0;
+  const good=Number(document.getElementById("eq-good").value)||0;
+  const bar=document.getElementById("eq-val-bar");
+  if(outQty>0&&(good+damage)!==outQty){
+    bar.style.display="block";
+    bar.className="alert alert-warn";
+    bar.textContent=`⚠ Good (${good}) + Damage (${damage}) = ${good+damage} — must equal Out Qty (${outQty})`;
+  } else { bar.style.display="none"; }
+}
+
+function onEQTypeCalc(){
+  const ids=["eq-cut","eq-fabric","eq-stripped","eq-open-stitch","eq-rem-stain","eq-non-rem-stain"];
+  const sum=ids.reduce((a,id)=>a+(Number(document.getElementById(id).value)||0),0)
+            +(Number(document.getElementById("eq-other-qty").value)||0);
+  const damage=Number(document.getElementById("eq-damage").value)||0;
+  const st=document.getElementById("eq-types-status");
+  if(damage>0){
+    st.style.color=sum===damage?"#2E7D32":"#C62828";
+    st.textContent=sum===damage?`✅ Types match (${sum})`:`❌ Types sum (${sum}) must equal Damage (${damage})`;
+  } else { st.textContent=""; }
+}
+
+function saveEditQC(){
+  if(!editQCId)return;
+  const idx=qualityChecks.findIndex(q=>q.qualityId===editQCId);
+  if(idx===-1)return;
+  const q=qualityChecks[idx];
+  const good=Number(document.getElementById("eq-good").value)||0;
+  const damage=Number(document.getElementById("eq-damage").value)||0;
+  const repairable=Number(document.getElementById("eq-repairable").value)||0;
+  const outQty=q.outQty;
+  const alertEl=document.getElementById("edit-qc-alert");
+
+  // Validations
+  if(outQty>0&&(good+damage)!==outQty){
+    alertEl.innerHTML=`<div class="alert alert-error">Good (${good}) + Damage (${damage}) must equal Out Qty (${outQty}).</div>`;return;}
+  if(repairable>damage){
+    alertEl.innerHTML=`<div class="alert alert-error">Repairable (${repairable}) cannot exceed Damage (${damage}).</div>`;return;}
+  const ids2=["eq-cut","eq-fabric","eq-stripped","eq-open-stitch","eq-rem-stain","eq-non-rem-stain"];
+  const typeSum=ids2.reduce((a,id)=>a+(Number(document.getElementById(id).value)||0),0)
+               +(Number(document.getElementById("eq-other-qty").value)||0);
+  if(damage>0&&typeSum!==damage){
+    alertEl.innerHTML=`<div class="alert alert-error">Damage type quantities (${typeSum}) must equal Damage Garments (${damage}).</div>`;return;}
+
+  // Update directly by index
+  qualityChecks[idx].good=good;
+  qualityChecks[idx].damage=damage;
+  qualityChecks[idx].repairable=repairable;
+  qualityChecks[idx].nonRepairable=Math.max(0,damage-repairable);
+  qualityChecks[idx].cutDamage=Number(document.getElementById("eq-cut").value)||0;
+  qualityChecks[idx].fabricDamage=Number(document.getElementById("eq-fabric").value)||0;
+  qualityChecks[idx].stripped=Number(document.getElementById("eq-stripped").value)||0;
+  qualityChecks[idx].openStitch=Number(document.getElementById("eq-open-stitch").value)||0;
+  qualityChecks[idx].removableStain=Number(document.getElementById("eq-rem-stain").value)||0;
+  qualityChecks[idx].nonRemovableStain=Number(document.getElementById("eq-non-rem-stain").value)||0;
+  qualityChecks[idx].otherDamageType=document.getElementById("eq-other-type").value;
+  qualityChecks[idx].otherDamageQty=Number(document.getElementById("eq-other-qty").value)||0;
+  qualityChecks[idx].remarks=document.getElementById("eq-remarks").value;
+
+  closeEditQC();
+  renderQCRecords();
+  renderQCRecent();
+  showAlert("qc-alert","Quality entry updated. Remember to save to GitHub.","success");
+  if(activeQCTab==="dashboard") renderQCDash();
+}
 
 // ── AUTO REFRESH DASHBOARDS ──────────────────────────
 function refreshDashboards(){
