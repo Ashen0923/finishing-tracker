@@ -480,10 +480,6 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg" id="bdf-cw2" style="display:none"><label>To</label><input type="date" id="bdf-to" onchange="renderBWDash()"/></div>
       <div class="fg"><label>Style Name</label><input type="text" id="bdf-style" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Color</label><input type="text" id="bdf-color" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Style Name</label>
-        <input type="text" id="bdf-style" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label>
-        <input type="text" id="bdf-color" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="bdf-factory" onchange="renderBWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -612,10 +608,6 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg" id="adf-cw2" style="display:none"><label>To</label><input type="date" id="adf-to" onchange="renderAWDash()"/></div>
       <div class="fg"><label>Style Name</label><input type="text" id="adf-style" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Color</label><input type="text" id="adf-color" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Style Name</label>
-        <input type="text" id="adf-style" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label>
-        <input type="text" id="adf-color" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="adf-factory" onchange="renderAWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -1804,8 +1796,66 @@ function renderProcessView(){
 
   // Table
   const procStyleF=document.getElementById("proc-filter-style")?document.getElementById("proc-filter-style").value.toLowerCase():"";
+  const procColorF=document.getElementById("proc-filter-color")?document.getElementById("proc-filter-color").value.toLowerCase():"";
   const procFacF=document.getElementById("proc-filter-factory")?document.getElementById("proc-filter-factory").value:"";
   const procStageF=document.getElementById("proc-filter-stage")?document.getElementById("proc-filter-stage").value:"";
+
+  // Filter allStyles for KPIs based on style/color/factory filters
+  const filteredStyles=procStyleF||procColorF||procFacF?[...allStyles].filter(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k);
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k);
+    const name=(bw||aw)?((bw||aw).styleName||""):"";
+    const col=(bw||aw)?((bw||aw).color||""):"";
+    const fac=(bw||aw)?((bw||aw).factory||""):"";
+    if(procStyleF&&!name.toLowerCase().includes(procStyleF)) return false;
+    if(procColorF&&!col.toLowerCase().includes(procColorF)) return false;
+    if(procFacF&&fac!==procFacF) return false;
+    return true;
+  }):allStyles;
+
+  // Recalculate KPIs using filtered styles
+  let bwWIPfilt=0,awWIPfilt=0,inWashFilt=0,fullyClFilt=0;
+  filteredStyles.forEach(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k);
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k);
+    const bwW=bw?bw.wip:0;
+    const awW=aw?aw.wip:0;
+    const bwO=bw?bw.totalOut:0;
+    const awI=aw?aw.totalIn:0;
+    const inW=Math.max(0,bwO-awI);
+    bwWIPfilt+=bwW; awWIPfilt+=awW; inWashFilt+=inW;
+    const totalIn2=bw?bw.totalIn:0;
+    const plan2=bw?getActivePlan((bw||aw).styleName,(bw||aw).color,today()):null;
+    let planOk=false;
+    if(plan2){
+      if(plan2.manuallyCompleted) planOk=totalIn2>=(plan2.completedQty||plan2.planQty);
+      else planOk=plan2.planQty>0&&totalIn2>=plan2.planQty;
+    }
+    if(bwW===0&&inW===0&&awW===0&&planOk) fullyClFilt++;
+  });
+
+  setEl("proc-bw-wip",bwWIPfilt);
+  setEl("proc-wash-wip",inWashFilt);
+  setEl("proc-aw-wip",awWIPfilt);
+  setEl("proc-total-styles",filteredStyles.size||filteredStyles.length);
+  setEl("proc-cleared",fullyClFilt);
+
+  // Oldest pending (filtered)
+  const pendingFilt=[...bwMap.filter(w=>w.wip>0&&filteredStyles.has?filteredStyles.has(sKey(w.styleName,w.color)):filteredStyles.includes(sKey(w.styleName,w.color))),...awMap.filter(w=>w.wip>0&&(filteredStyles.has?filteredStyles.has(sKey(w.styleName,w.color)):filteredStyles.includes(sKey(w.styleName,w.color))))].sort((a,b)=>(a.firstDate||"z")>(b.firstDate||"z")?1:-1);
+  setEl("proc-oldest",pendingFilt[0]?`${pendingFilt[0].styleName} (${pendingFilt[0].firstDate})`:"—");
+
+  // Top factory (filtered)
+  const allFacMapF={};
+  filteredStyles.forEach(k=>{
+    const bw=bwMap.find(w=>sKey(w.styleName,w.color)===k);
+    const aw=awMap.find(w=>sKey(w.styleName,w.color)===k);
+    const fac=(bw||aw)?((bw||aw).factory||""):"";
+    const bwW=bw?bw.wip:0; const awW=aw?aw.wip:0;
+    if(fac) allFacMapF[fac]=(allFacMapF[fac]||0)+bwW+awW;
+  });
+  const topFF=Object.entries(allFacMapF).sort((a,b)=>b[1]-a[1])[0];
+  setEl("proc-top-fac",topFF?`${topFF[0]} (${topFF[1]})`:"—");
+
   const tbody=document.getElementById("proc-table-body");
   const rows=[];
   allStyles.forEach(k=>{
