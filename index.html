@@ -230,24 +230,65 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 
 <!-- EDIT STYLE MODAL -->
 <div id="edit-modal" class="modal-overlay" style="display:none">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:860px">
     <div class="modal-hdr">
-      <h3>Edit Style — After Wash Tack Types</h3>
+      <h3>Edit Style</h3>
       <button class="modal-close" onclick="closeEditModal()">&times;</button>
     </div>
     <div class="modal-body">
       <div id="modal-alert"></div>
-      <div style="background:var(--lgrey);border-radius:8px;padding:14px 16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;" id="modal-style-info"></div>
-      <div class="divider" style="margin:0 0 16px"></div>
+
+      <!-- Style Info -->
+      <div class="sub-label">Style Information</div>
+      <div class="field-group col3" style="margin-bottom:14px">
+        <div class="fg2"><label>Style Name</label><input type="text" id="m-style-name" readonly style="background:var(--lgrey);color:var(--grey)"/></div>
+        <div class="fg2"><label>Color</label><input type="text" id="m-color" readonly style="background:var(--lgrey);color:var(--grey)"/></div>
+        <div class="fg2"><label>ACC</label><input type="text" id="m-acc"/></div>
+      </div>
+      <div class="field-group col5" style="margin-bottom:0">
+        <div class="fg2"><label>Factory</label>
+          <select id="m-factory"><option value="">Select</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+        <div class="fg2"><label>Product</label>
+          <select id="m-product"><option value="">Select</option><option>Shirt</option><option>Short</option><option>Jkt</option><option>Bls</option><option>Skirt</option><option>Frock</option></select></div>
+        <div class="fg2"><label>Wash Type</label>
+          <select id="m-wash"><option value="">Select</option><option>Denim</option><option>Gmt Dye</option><option>Pigment Dye</option><option>Normal</option></select></div>
+        <div class="fg2"><label>Tack Sample</label>
+          <select id="m-tack-sample"><option value="">Select</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Lead Time (hrs)</label><input type="number" id="m-lead-time" min="0"/></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- BW Tack Types -->
+      <div class="sub-label">Before Wash Tack Types</div>
+      <div class="tack-grid">
+        <div class="fg2"><label>Waist Tie</label><select id="m-bw-waist-tie" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Placket Fabric Stitch</label><select id="m-bw-placket" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Sleeve Open Fabric Stitch</label><select id="m-bw-sleeve" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Bottom Hem Fabric Stitch</label><select id="m-bw-bottom-hem" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Dummy Button / Loose Tack</label><select id="m-bw-dummy" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Pocket Bag Close</label><select id="m-bw-pocket" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+        <div class="fg2"><label>Waist Tack</label><select id="m-bw-waist-tack" onchange="calcModalTC('bw')"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+      </div>
+      <div class="tack-count-row" style="margin-top:12px">
+        <span>BW Tack Count (auto):</span>
+        <div class="tack-count-val" id="m-bw-tc-display">0</div>
+        <input type="hidden" id="m-bw-tc" value="0"/>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- AW Tack Types -->
       <div class="sub-label">After Wash Tack Types</div>
       <div class="tack-grid" id="modal-tack-grid"></div>
-      <div class="tack-count-row aw" style="margin-top:14px">
-        <span>Count of After Wash Tack Types (auto-calculated):</span>
+      <div class="tack-count-row aw" style="margin-top:12px">
+        <span>AW Tack Count (auto):</span>
         <div class="tack-count-val aw" id="modal-tack-count-display">0</div>
         <input type="hidden" id="modal-tack-count" value="0"/>
       </div>
-      <div class="btn-row" style="margin-top:18px">
-        <button class="btn btn-purple" onclick="saveEditModal()">Save Changes</button>
+
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-primary" onclick="saveEditModal()">Save Changes</button>
         <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
       </div>
     </div>
@@ -2059,11 +2100,18 @@ function calcTC(type){
     document.getElementById("aw-tc").value=cnt;
   }
 }
-function calcModalTC(){
-  const ids=["m-rm-wash-tie","m-rm-wash-tack","m-rm-label","m-loop","m-reinforce","m-tab","m-dummy-rm","m-pocket-clean"];
-  const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
-  document.getElementById("modal-tack-count-display").textContent=cnt;
-  document.getElementById("modal-tack-count").value=cnt;
+function calcModalTC(type){
+  if(type==="bw"){
+    const ids=["m-bw-waist-tie","m-bw-placket","m-bw-sleeve","m-bw-bottom-hem","m-bw-dummy","m-bw-pocket","m-bw-waist-tack"];
+    const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
+    document.getElementById("m-bw-tc-display").textContent=cnt;
+    document.getElementById("m-bw-tc").value=cnt;
+  } else {
+    const ids=["m-rm-wash-tie","m-rm-wash-tack","m-rm-label","m-loop","m-reinforce","m-tab","m-dummy-rm","m-pocket-clean"];
+    const cnt=ids.filter(id=>document.getElementById(id)&&document.getElementById(id).value==="Yes").length;
+    document.getElementById("modal-tack-count-display").textContent=cnt;
+    document.getElementById("modal-tack-count").value=cnt;
+  }
 }
 
 // ── STYLE DATABASE ────────────────────────────────────
@@ -2143,7 +2191,7 @@ function renderStyleDB(){
     <td>${s.tackSample||"—"}</td><td>${s.bwTackCount||"0"}</td><td>${s.awTackCount||"0"}</td>
     <td>${s.stdLeadTimeHrs||"—"} hrs</td>
     <td style="display:flex;gap:6px">
-      <button class="btn-edit" onclick="openEditModal('${s.styleKey}')">Edit AW Tacks</button>
+      <button class="btn-edit" onclick="openEditModal('${s.styleKey}')">Edit</button>
       <button class="btn btn-danger btn-sm" onclick="deleteStyle('${s.styleKey}')">Delete</button>
     </td>
   </tr>`).join(""):`<tr><td colspan="11" class="no-data">No styles added yet.</td></tr>`;
@@ -2162,13 +2210,31 @@ function openEditModal(key){
   const s=styles.find(st=>st.styleKey===key);
   if(!s)return;
   editingStyleKey=key;
-  // Style info
-  document.getElementById("modal-style-info").innerHTML=
-    `<div class="af-item"><div class="af-lbl">Style</div><div class="af-val">${s.styleName}</div></div>
-     <div class="af-item"><div class="af-lbl">Color</div><div class="af-val">${s.color}</div></div>
-     <div class="af-item"><div class="af-lbl">Factory</div><div class="af-val">${s.factory}</div></div>
-     <div class="af-item"><div class="af-lbl">Product</div><div class="af-val">${s.product}</div></div>`;
-  // AW tack fields
+
+  // Style info fields
+  document.getElementById("m-style-name").value=s.styleName;
+  document.getElementById("m-color").value=s.color;
+  document.getElementById("m-acc").value=s.acc||"";
+  document.getElementById("m-factory").value=s.factory||"";
+  document.getElementById("m-product").value=s.product||"";
+  document.getElementById("m-wash").value=s.washType||"";
+  document.getElementById("m-tack-sample").value=s.tackSample||"";
+  document.getElementById("m-lead-time").value=s.stdLeadTimeHrs||"";
+
+  // BW Tack Types
+  document.getElementById("m-bw-waist-tie").value=s.bwWaistTie||"";
+  document.getElementById("m-bw-placket").value=s.bwPlacket||"";
+  document.getElementById("m-bw-sleeve").value=s.bwSleeve||"";
+  document.getElementById("m-bw-bottom-hem").value=s.bwBottomHem||"";
+  document.getElementById("m-bw-dummy").value=s.bwDummy||"";
+  document.getElementById("m-bw-pocket").value=s.bwPocket||"";
+  document.getElementById("m-bw-waist-tack").value=s.bwWaistTack||"";
+  const bwCnt=["m-bw-waist-tie","m-bw-placket","m-bw-sleeve","m-bw-bottom-hem","m-bw-dummy","m-bw-pocket","m-bw-waist-tack"]
+    .filter(id=>document.getElementById(id).value==="Yes").length;
+  document.getElementById("m-bw-tc-display").textContent=bwCnt;
+  document.getElementById("m-bw-tc").value=bwCnt;
+
+  // AW Tack Types
   const awFields=[
     {id:"m-rm-wash-tie",label:"Remove Wash Tie",val:s.awRmWashTie},
     {id:"m-rm-wash-tack",label:"Remove Wash Tack & Cleaning",val:s.awRmWashTack},
@@ -2182,16 +2248,16 @@ function openEditModal(key){
   document.getElementById("modal-tack-grid").innerHTML=awFields.map(f=>`
     <div class="fg2">
       <label>${f.label}</label>
-      <select id="${f.id}" onchange="calcModalTC()">
+      <select id="${f.id}" onchange="calcModalTC('aw')">
         <option value="">—</option>
         <option value="Yes"${f.val==="Yes"?" selected":""}>Yes</option>
         <option value="No"${f.val==="No"?" selected":""}>No</option>
       </select>
     </div>`).join("");
-  // Update count display
-  const cnt=awFields.filter(f=>f.val==="Yes").length;
-  document.getElementById("modal-tack-count-display").textContent=cnt;
-  document.getElementById("modal-tack-count").value=cnt;
+  const awCnt=awFields.filter(f=>f.val==="Yes").length;
+  document.getElementById("modal-tack-count-display").textContent=awCnt;
+  document.getElementById("modal-tack-count").value=awCnt;
+  document.getElementById("modal-alert").innerHTML="";
   document.getElementById("edit-modal").style.display="flex";
 }
 function closeEditModal(){document.getElementById("edit-modal").style.display="none";editingStyleKey=null;}
@@ -2199,6 +2265,29 @@ function saveEditModal(){
   if(!editingStyleKey)return;
   const idx=styles.findIndex(st=>st.styleKey===editingStyleKey);
   if(idx===-1)return;
+  const factory=document.getElementById("m-factory").value;
+  const product=document.getElementById("m-product").value;
+  if(!factory||!product){
+    document.getElementById("modal-alert").innerHTML='<div class="alert alert-warn">Factory and Product are required.</div>';
+    return;
+  }
+  // Style info
+  styles[idx].acc          = document.getElementById("m-acc").value;
+  styles[idx].factory      = factory;
+  styles[idx].product      = product;
+  styles[idx].washType     = document.getElementById("m-wash").value;
+  styles[idx].tackSample   = document.getElementById("m-tack-sample").value;
+  styles[idx].stdLeadTimeHrs = document.getElementById("m-lead-time").value;
+  // BW Tacks
+  styles[idx].bwWaistTie   = document.getElementById("m-bw-waist-tie").value;
+  styles[idx].bwPlacket    = document.getElementById("m-bw-placket").value;
+  styles[idx].bwSleeve     = document.getElementById("m-bw-sleeve").value;
+  styles[idx].bwBottomHem  = document.getElementById("m-bw-bottom-hem").value;
+  styles[idx].bwDummy      = document.getElementById("m-bw-dummy").value;
+  styles[idx].bwPocket     = document.getElementById("m-bw-pocket").value;
+  styles[idx].bwWaistTack  = document.getElementById("m-bw-waist-tack").value;
+  styles[idx].bwTackCount  = document.getElementById("m-bw-tc").value;
+  // AW Tacks
   styles[idx].awRmWashTie  = document.getElementById("m-rm-wash-tie").value;
   styles[idx].awRmWashTack = document.getElementById("m-rm-wash-tack").value;
   styles[idx].awRmLabel    = document.getElementById("m-rm-label").value;
@@ -2209,7 +2298,7 @@ function saveEditModal(){
   styles[idx].awPocketClean= document.getElementById("m-pocket-clean").value;
   styles[idx].awTackCount  = document.getElementById("modal-tack-count").value;
   closeEditModal();
-  showAlert("style-alert","After Wash tack types updated successfully. Remember to save to GitHub.","success");
+  showAlert("style-alert","Style updated successfully. Remember to save to GitHub.","success");
   renderStyleDB();
   refreshDashboards();
 }
