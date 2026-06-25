@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Finishing &amp; Washing Tracker — Manager View</title>
+<title>Central Finishing Tracker — Manager View</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -213,7 +213,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <img src="https://www.end2end.lk/images/logo-2.png" alt="End2End" height="28" class="ld-logo-e2e" onerror="this.style.display='none'"/>
     </div>
     <div class="ld-titles">
-      <h1>Finishing &amp; Washing Tracker</h1>
+      <h1>Central Finishing Tracker</h1>
       <p>Manager Dashboard View</p>
     </div>
     <div class="ld-bar-wrap">
@@ -431,7 +431,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 <!-- SIDEBAR -->
 <div id="sidebar">
   <div class="sb-logo">
-    <h1>Finishing &amp; Washing<br>Tracker</h1>
+    <h1>Central Finishing<br>Tracker</h1>
     <p>Before Wash &amp; After Wash System</p>
     <div style="margin-top:8px;background:var(--orange);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;display:inline-block;letter-spacing:.5px">MANAGER VIEW</div>
   </div>
@@ -719,6 +719,23 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 <div id="page-process-view" class="page">
   <div class="page-top"><div><h2>Complete Process View</h2><p>Full journey: Factory &#8594; Finishing &#8594; Washing &#8594; Factory</p></div></div>
   <div class="page-body">
+    <div class="filter-bar">
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="proc-filter-style" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="proc-filter-color" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Factory</label>
+        <select id="proc-filter-factory" onchange="renderProcessView()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Stage</label>
+        <select id="proc-filter-stage" onchange="renderProcessView()">
+          <option value="">All</option>
+          <option value="bw">BW WIP — In Finishing</option>
+          <option value="washing">In Washing Dept</option>
+          <option value="aw">AW WIP — In Finishing</option>
+          <option value="cleared">Fully Cleared</option>
+        </select></div>
+      <button class="btn-clear" onclick="clearProcFilters()">Clear</button>
+    </div>
     <div class="stage-cards">
       <div class="stage-card">
         <h4>Before Wash WIP — In Finishing</h4>
@@ -745,23 +762,6 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <div class="chart-row">
       <div class="chart-box"><h4>WIP by Stage</h4><canvas id="proc-chart-stage"></canvas></div>
       <div class="chart-box"><h4>Total WIP by Factory (All Stages)</h4><canvas id="proc-chart-fac"></canvas></div>
-    </div>
-    <div class="filter-bar">
-      <div class="fg"><label>Style Name</label>
-        <input type="text" id="proc-filter-style" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label>
-        <input type="text" id="proc-filter-color" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Factory</label>
-        <select id="proc-filter-factory" onchange="renderProcessView()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
-      <div class="fg"><label>Stage</label>
-        <select id="proc-filter-stage" onchange="renderProcessView()">
-          <option value="">All</option>
-          <option value="bw">BW WIP — In Finishing</option>
-          <option value="washing">In Washing Dept</option>
-          <option value="aw">AW WIP — In Finishing</option>
-          <option value="cleared">Fully Cleared</option>
-        </select></div>
-      <button class="btn-clear" onclick="clearProcFilters()">Clear</button>
     </div>
     <div class="section">
       <div class="section-hdr"><h3>Style-by-Style Process Status</h3><span id="proc-table-count" style="font-size:11px;color:var(--grey)"></span></div>
