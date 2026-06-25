@@ -1028,7 +1028,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="filter-bar">
         <div class="fg"><label>From Date</label><input type="date" id="qcd-from" onchange="renderQCDash()"/></div>
         <div class="fg"><label>To Date</label><input type="date" id="qcd-to" onchange="renderQCDash()"/></div>
-        <div class="fg"><label>Style Name</label><input type="text" id="qcd-style" placeholder="Search style…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <div class="fg"><label>Style Name</label><input type="text" id="qcd-style" placeholder="Search…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <div class="fg"><label>Color</label><input type="text" id="qcd-color" placeholder="Search…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
         <div class="fg"><label>Factory</label>
           <select id="qcd-factory" onchange="renderQCDash()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
         <button class="btn-clear" onclick="clearQCDashFilters()">Clear</button>
