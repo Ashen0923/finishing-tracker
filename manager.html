@@ -478,6 +478,12 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         </select></div>
       <div class="fg" id="bdf-cw1" style="display:none"><label>From</label><input type="date" id="bdf-from" onchange="renderBWDash()"/></div>
       <div class="fg" id="bdf-cw2" style="display:none"><label>To</label><input type="date" id="bdf-to" onchange="renderBWDash()"/></div>
+      <div class="fg"><label>Style Name</label><input type="text" id="bdf-style" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><input type="text" id="bdf-color" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="bdf-style" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="bdf-color" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="bdf-factory" onchange="renderBWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -604,6 +610,12 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         </select></div>
       <div class="fg" id="adf-cw1" style="display:none"><label>From</label><input type="date" id="adf-from" onchange="renderAWDash()"/></div>
       <div class="fg" id="adf-cw2" style="display:none"><label>To</label><input type="date" id="adf-to" onchange="renderAWDash()"/></div>
+      <div class="fg"><label>Style Name</label><input type="text" id="adf-style" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><input type="text" id="adf-color" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Style Name</label>
+        <input type="text" id="adf-style" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="adf-color" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="adf-factory" onchange="renderAWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -747,7 +759,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="filter-bar">
       <div class="fg"><label>Style Name</label>
-        <input type="text" id="proc-filter-style" placeholder="Search style…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <input type="text" id="proc-filter-style" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="proc-filter-color" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="proc-filter-factory" onchange="renderProcessView()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Stage</label>
@@ -778,7 +792,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg"><label>Process</label>
         <select id="ws-process" onchange="renderWIPSummary()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
       <div class="fg"><label>Style Name</label>
-        <input type="text" id="ws-style" placeholder="Search style…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <input type="text" id="ws-style" placeholder="Search…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="ws-color" placeholder="Search…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="ws-factory" onchange="renderWIPSummary()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Status</label>
@@ -902,11 +918,12 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 
     <!-- Tabs -->
     <div class="tabs" style="margin-bottom:20px">
+      
       <button class="tab-btn active" onclick="switchQCTab('dashboard',this)">Dashboard</button>
       <button class="tab-btn" onclick="switchQCTab('records',this)">All Records</button>
     </div>
 
-    <!-- DATA ENTRY TAB (hidden in manager view) -->
+    <!-- DATA ENTRY TAB -->
     <div id="qc-tab-entry" style="display:none">
       <div id="qc-alert"></div>
       <div class="form-card">
@@ -1052,6 +1069,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         <div class="fg"><label>From Date</label><input type="date" id="qcr-from" onchange="renderQCRecords()"/></div>
         <div class="fg"><label>To Date</label><input type="date" id="qcr-to" onchange="renderQCRecords()"/></div>
         <div class="fg"><label>Style</label><input type="text" id="qcr-style" placeholder="Search…" oninput="renderQCRecords()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
+      <div class="fg"><label>Color</label><input type="text" id="qcr-color" placeholder="Search…" oninput="renderQCRecords()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
         <div class="fg"><label>Factory</label>
           <select id="qcr-factory" onchange="renderQCRecords()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
         <button class="btn-clear" onclick="clearQCRecordFilters()">Clear</button>
@@ -1159,6 +1177,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <div class="filter-bar" style="margin-bottom:12px">
       <div class="fg"><label>Style Name</label>
         <input type="text" id="pva-tbl-style" placeholder="Search…" oninput="renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label>
+        <input type="text" id="pva-tbl-color" placeholder="Search…" oninput="renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="pva-tbl-factory" onchange="renderPlanActual()">
           <option value="">All Factories</option>
@@ -1542,11 +1562,13 @@ function getWIPMap(txArr){
   return Object.values(map).map(m=>({...m,wip:m.totalIn-m.totalOut}));
 }
 
-function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId){
+function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId,styleId,colorId){
   const range=document.getElementById(rangeId).value;
   const factory=document.getElementById(facId).value;
   const product=document.getElementById(prodId).value;
   const wash=document.getElementById(washId).value;
+  const styleF=styleId&&document.getElementById(styleId)?document.getElementById(styleId).value.toLowerCase():"";
+  const colorF=colorId&&document.getElementById(colorId)?document.getElementById(colorId).value.toLowerCase():"";
   const t=today();
   let from="",to=t;
   if(range==="today"){from=t;}
@@ -1564,6 +1586,8 @@ function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId){
     if(factory&&tx.factory!==factory)return false;
     if(product&&tx.product!==product)return false;
     if(wash&&tx.washType!==wash)return false;
+    if(styleF&&!tx.styleName.toLowerCase().includes(styleF))return false;
+    if(colorF&&!tx.color.toLowerCase().includes(colorF))return false;
     return true;
   });
 }
@@ -1662,7 +1686,7 @@ function renderDashCommon(p,txArr,filteredTx){
 
 function renderBWDash(){
   setEl("bw-dash-date",todayDisp());
-  const ftx=filterTx(bwTx,"bdf-range","bdf-from","bdf-to","bdf-factory","bdf-product","bdf-wash");
+  const ftx=filterTx(bwTx,"bdf-range","bdf-from","bdf-to","bdf-factory","bdf-product","bdf-wash","bdf-style","bdf-color");
   renderDashCommon("bk",bwTx,ftx);
 }
 function onBWFilterChange(){
@@ -1673,6 +1697,7 @@ function onBWFilterChange(){
 }
 function clearBWFilters(){
   ["bdf-range","bdf-factory","bdf-product","bdf-wash"].forEach(id=>{document.getElementById(id).value=id==="bdf-range"?"all":"";});
+  ["bdf-style","bdf-color"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("bdf-cw1").style.display="none";
   document.getElementById("bdf-cw2").style.display="none";
   renderBWDash();
@@ -1680,7 +1705,7 @@ function clearBWFilters(){
 
 function renderAWDash(){
   document.getElementById("aw-dash-date").textContent=todayDisp();
-  const ftx=filterTx(awTx,"adf-range","adf-from","adf-to","adf-factory","adf-product","adf-wash");
+  const ftx=filterTx(awTx,"adf-range","adf-from","adf-to","adf-factory","adf-product","adf-wash","adf-style","adf-color");
   renderDashCommon("ak",awTx,ftx);
 }
 function onAWFilterChange(){
@@ -1691,6 +1716,7 @@ function onAWFilterChange(){
 }
 function clearAWFilters(){
   ["adf-range","adf-factory","adf-product","adf-wash"].forEach(id=>{document.getElementById(id).value=id==="adf-range"?"all":"";});
+  ["adf-style","adf-color"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("adf-cw1").style.display="none";
   document.getElementById("adf-cw2").style.display="none";
   renderAWDash();
@@ -1811,7 +1837,9 @@ function renderProcessView(){
     const inWash=Math.max(0,(bw.totalOut||0)-(aw.totalIn||0));
     const inWashBadge=inWash>0?`<span class="badge bl">${inWash}</span>`:`<span class="badge bz">0</span>`;
     // Apply table filters
+    const procColorF2=document.getElementById("proc-filter-color")?document.getElementById("proc-filter-color").value.toLowerCase():"";
     if(procStyleF&&!name.toLowerCase().includes(procStyleF)) return;
+    if(procColorF2&&!color.toLowerCase().includes(procColorF2)) return;
     if(procFacF&&factory!==procFacF) return;
     if(procStageF){
       const stageText=stage.toLowerCase();
@@ -1834,7 +1862,9 @@ function renderWIPSummary(){
   let data=[];
   if(proc==="both"||proc==="bw") getWIPMap(bwTx).forEach(w=>data.push({...w,process:"Before Wash"}));
   if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
+  const colorF2=document.getElementById("ws-color")?document.getElementById("ws-color").value.toLowerCase():"";
   if(styleF) data=data.filter(d=>d.styleName.toLowerCase().includes(styleF));
+  if(colorF2) data=data.filter(d=>d.color.toLowerCase().includes(colorF2));
   if(fac) data=data.filter(d=>d.factory===fac);
   if(stat==="open") data=data.filter(d=>d.wip>0);
   if(stat==="cleared") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="cleared");
@@ -1879,14 +1909,14 @@ function renderAllTx(){
   </tr>`).join(""):`<tr><td colspan="16" class="no-data">No records found.</td></tr>`;
 }
 function clearProcFilters(){
-  ["proc-filter-style","proc-filter-factory","proc-filter-stage"].forEach(id=>{
+  ["proc-filter-style","proc-filter-color","proc-filter-factory","proc-filter-stage"].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value="";
   });
   renderProcessView();
 }
 function clearWIPFilters(){
-  ["ws-style","ws-factory","ws-status","ws-process"].forEach(id=>{
+  ["ws-style","ws-color","ws-factory","ws-status","ws-process"].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value=id==="ws-process"?"both":"";
   });
@@ -2067,8 +2097,8 @@ function renderTodayEntries(process){
       tx.cumulativeWip)}</td>
     <td>${tx.remarks||"—"}</td>
     <td style="display:flex;gap:5px">
-      
-      
+      <button class="btn-edit" onclick="openEditEntry('${process}','${tx.rowId}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEntry('${process}','${tx.rowId}')">Delete</button>
     </td>
   </tr>`).join(""):`<tr><td colspan="13" class="no-data">No entries yet.</td></tr>`;
 }
@@ -2639,7 +2669,7 @@ function undoPlanComplete(planKey){
 }
 
 function clearPVATableFilters(){
-  ["pva-tbl-style","pva-tbl-factory","pva-tbl-status"].forEach(id=>{
+  ["pva-tbl-style","pva-tbl-color","pva-tbl-factory","pva-tbl-status"].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.value="";
   });
@@ -2776,9 +2806,11 @@ function renderPlanActual(){
 
   // Apply table filters
   const tblStyle=document.getElementById("pva-tbl-style")?document.getElementById("pva-tbl-style").value.toLowerCase():"";
+  const tblColor=document.getElementById("pva-tbl-color")?document.getElementById("pva-tbl-color").value.toLowerCase():"";
   const tblFactory=document.getElementById("pva-tbl-factory")?document.getElementById("pva-tbl-factory").value:"";
   const tblStatus=document.getElementById("pva-tbl-status")?document.getElementById("pva-tbl-status").value:"";
   if(tblStyle) rows=rows.filter(r=>r.styleName.toLowerCase().includes(tblStyle));
+  if(tblColor) rows=rows.filter(r=>r.color.toLowerCase().includes(tblColor));
   if(tblFactory) rows=rows.filter(r=>r.factory===tblFactory);
   if(tblStatus) rows=rows.filter(r=>r.dispatchStatus===tblStatus||(tblStatus==="manual"&&r.manuallyCompleted));
 
@@ -2853,7 +2885,7 @@ function renderPlanActual(){
 
     const endDisp=r.endDate==="ongoing"?'<span style="color:var(--teal);font-weight:600">Ongoing</span>':r.endDate;
 
-    // Action button — hidden in manager view
+    // Action button
     let actionBtn="—";
 
     return`<tr${r.manuallyCompleted?' style="background:#F1F8F1"':""}>
@@ -2891,7 +2923,8 @@ function renderPlanActual(){
       <td>${p.startDate}</td><td>${endDisp}</td>
       <td>${p.planQty.toLocaleString()}</td><td>${p.minDispatch||"—"}</td>
       <td style="display:flex;gap:5px">
-
+        <button class="btn-edit" onclick="openEditPlan('${p.planKey}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteMonthlyPlan('${p.planKey}')">Delete</button>
       </td>
     </tr>`;
   }).join(""):`<tr><td colspan="8" class="no-data">No plan records yet.</td></tr>`;
@@ -2912,8 +2945,7 @@ function switchQCTab(tab,btn){
 }
 
 function initQualityPage(){
-  switchQCTab("dashboard",document.querySelector("#page-quality .tab-btn"));
-  renderQCDash();
+  renderQCRecent();
 }
 
 function normD(d){ return d?String(d).slice(0,10):""; }
@@ -3111,18 +3143,20 @@ function renderQCRecent(){
       <td><span class="badge bz">${goodRate}%</span></td>
       <td><span class="badge ${damRate>5?"bh":"bl"}">${damRate}%</span></td>
       <td style="display:flex;gap:5px">
-  
+        <button class="btn-edit" onclick="openEditQC('${q.qualityId}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteQualityEntry('${q.qualityId}')">Delete</button>
       </td>
     </tr>`;
   }).join(""):`<tr><td colspan="12" class="no-data">No quality entries yet.</td></tr>`;
 }
 
-function filterQC(from,to,factory,style){
+function filterQC(from,to,factory,style,color){
   return qualityChecks.filter(q=>{
     if(from&&q.date<from) return false;
     if(to&&q.date>to) return false;
     if(factory&&q.factory!==factory) return false;
     if(style&&!q.styleName.toLowerCase().includes(style.toLowerCase())) return false;
+    if(color&&!q.color.toLowerCase().includes(color.toLowerCase())) return false;
     return true;
   });
 }
@@ -3131,8 +3165,9 @@ function renderQCDash(){
   const from=document.getElementById("qcd-from").value;
   const to=document.getElementById("qcd-to").value;
   const style=document.getElementById("qcd-style").value;
+  const color=document.getElementById("qcd-color")?document.getElementById("qcd-color").value:"";
   const factory=document.getElementById("qcd-factory").value;
-  const data=filterQC(from,to,factory,style);
+  const data=filterQC(from,to,factory,style,color);
 
   const totalOut=data.reduce((a,q)=>a+q.outQty,0);
   const totalGood=data.reduce((a,q)=>a+q.good,0);
@@ -3223,7 +3258,7 @@ function renderQCDash(){
 }
 
 function clearQCDashFilters(){
-  ["qcd-from","qcd-to","qcd-style","qcd-factory"].forEach(id=>{document.getElementById(id).value="";});
+  ["qcd-from","qcd-to","qcd-style","qcd-color","qcd-factory"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   renderQCDash();
 }
 
@@ -3232,7 +3267,8 @@ function renderQCRecords(){
   const to=document.getElementById("qcr-to").value;
   const style=document.getElementById("qcr-style").value.toLowerCase();
   const factory=document.getElementById("qcr-factory").value;
-  let data=filterQC(from,to,factory).filter(q=>!style||q.styleName.toLowerCase().includes(style));
+  const colorR=document.getElementById("qcr-color")?document.getElementById("qcr-color").value:"";
+  let data=filterQC(from,to,factory,style,colorR);
   data.sort((a,b)=>b.date.localeCompare(a.date)||(b.time.localeCompare(a.time)));
   document.getElementById("qcr-count").textContent=`${data.length} record${data.length!==1?"s":""}`;
   const tbody=document.getElementById("qcr-body");
@@ -3252,7 +3288,7 @@ function renderQCRecords(){
 }
 
 function clearQCRecordFilters(){
-  ["qcr-from","qcr-to","qcr-style","qcr-factory"].forEach(id=>{document.getElementById(id).value="";});
+  ["qcr-from","qcr-to","qcr-style","qcr-color","qcr-factory"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
   renderQCRecords();
 }
 
@@ -3383,30 +3419,18 @@ async function loadAndRender(){
     const now=new Date();
     const el=document.getElementById("last-refreshed");
     if(el) el.textContent=now.toLocaleTimeString();
-  }catch(e){
-    console.error("Refresh error:",e);
-  }
+  }catch(e){console.error("Refresh error:",e);}
 }
-
 async function manualRefresh(){
   const btn=event.currentTarget;
-  btn.textContent="Refreshing…";
-  btn.disabled=true;
+  btn.textContent="Refreshing…";btn.disabled=true;
   await loadAndRender();
-  btn.textContent="↻ Refresh Now";
-  btn.disabled=false;
+  btn.textContent="↻ Refresh Now";btn.disabled=false;
 }
-
-// Auto refresh every 5 minutes
-setInterval(loadAndRender, 5 * 60 * 1000);
-
+setInterval(loadAndRender,5*60*1000);
 window.addEventListener("load",async()=>{
   loadConfig();
-  const safetyTimer=setTimeout(()=>{
-    document.getElementById("loading-overlay").style.display="none";
-    renderBWDash();
-  },8000);
-
+  const safetyTimer=setTimeout(()=>{document.getElementById("loading-overlay").style.display="none";renderBWDash();},8000);
   const minWait=new Promise(res=>setTimeout(res,3000));
   try{
     document.getElementById("loading-text").textContent="Loading data from GitHub…";
