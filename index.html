@@ -241,8 +241,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <!-- Style Info -->
       <div class="sub-label">Style Information</div>
       <div class="field-group col3" style="margin-bottom:14px">
-        <div class="fg2"><label>Style Name</label><input type="text" id="m-style-name" readonly style="background:var(--lgrey);color:var(--grey)"/></div>
-        <div class="fg2"><label>Color</label><input type="text" id="m-color" readonly style="background:var(--lgrey);color:var(--grey)"/></div>
+        <div class="fg2"><label>Style Name *</label><input type="text" id="m-style-name"/></div>
+        <div class="fg2"><label>Color *</label><input type="text" id="m-color"/></div>
         <div class="fg2"><label>ACC</label><input type="text" id="m-acc"/></div>
       </div>
       <div class="field-group col5" style="margin-bottom:0">
@@ -2271,6 +2271,39 @@ function saveEditModal(){
     document.getElementById("modal-alert").innerHTML='<div class="alert alert-warn">Factory and Product are required.</div>';
     return;
   }
+  const newStyleName=document.getElementById("m-style-name").value.trim();
+  const newColor=document.getElementById("m-color").value.trim().toUpperCase();
+  if(!newStyleName||!newColor){
+    document.getElementById("modal-alert").innerHTML='<div class="alert alert-warn">Style Name and Color are required.</div>';
+    return;
+  }
+  // Check if new name+color conflicts with another style
+  const newKey2=newStyleName.toLowerCase()+"|||"+newColor.toLowerCase();
+  const conflict=styles.find((s,i)=>i!==idx&&s.styleKey===newKey2);
+  if(conflict){
+    document.getElementById("modal-alert").innerHTML='<div class="alert alert-error">This Style Name + Color already exists.</div>';
+    return;
+  }
+  const oldKey=styles[idx].styleKey;
+  // Update styleKey if name/color changed
+  styles[idx].styleKey=newKey2;
+  styles[idx].styleName=newStyleName;
+  styles[idx].color=newColor;
+  // Update related transactions to reflect new style name/color
+  [bwTx,awTx].forEach(arr=>arr.forEach(t=>{
+    if(t.styleKey===oldKey){t.styleKey=newKey2;t.styleName=newStyleName;t.color=newColor;}
+  }));
+  monthlyPlans.forEach(p=>{
+    if(p.planKey.startsWith(oldKey)){
+      const newPlanKey=newKey2+"|||"+p.startDate;
+      p.planKey=newPlanKey;p.styleName=newStyleName;p.color=newColor;
+    }
+  });
+  qualityChecks.forEach(q=>{
+    if(q.styleName===styles[idx].styleName&&q.color===styles[idx].color){
+      q.styleName=newStyleName;q.color=newColor;
+    }
+  });
   // Style info
   styles[idx].acc          = document.getElementById("m-acc").value;
   styles[idx].factory      = factory;
