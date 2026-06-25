@@ -1529,7 +1529,7 @@ function weekNum(d){if(!d)return"";const dt=new Date(d),s=new Date(dt.getFullYea
 const monthStr=d=>d?new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"}):"";
 const sKey=(n,c)=>(n+"|||"+c).toLowerCase();
 const getStyle=(n,c)=>styles.find(s=>s.styleName.toLowerCase()===n.toLowerCase()&&s.color.toLowerCase()===c.toLowerCase());
-const wipBadge=v=>v===0?`<span class="badge bz">0</span>`:v<=50?`<span class="badge bl">${v}</span>`:`<span class="badge bh">${v}</span>`;
+const wipBadge=v=>v===0?`<span class="badge bz">0</span>`:v<0?`<span class="badge bh">${v} ⚠</span>`:v<=50?`<span class="badge bl">${v}</span>`:`<span class="badge bh">${v}</span>`;
 
 function getWIPMap(txArr){
   const map={};
@@ -1600,7 +1600,7 @@ function renderDashCommon(p,txArr,filteredTx){
   const cleared=allWIP.filter(w=>getPlanStatus(w.styleName,w.color,w.totalIn,w.wip)==="cleared");
   setEl(`${p}-in`,totalIn);
   setEl(`${p}-out`,totalOut);
-  setEl(`${p}-wip`,allWIP.reduce((a,w)=>a+Math.max(0,w.wip),0));
+  setEl(`${p}-wip`,allWIP.reduce((a,w)=>a+w.wip,0));
   setEl(`${p}-open`,openWIP.length);
   setEl(`${p}-entries`,filteredTx.length);
   setEl(`${p}-cleared`,cleared.length);
@@ -1620,7 +1620,7 @@ function renderDashCommon(p,txArr,filteredTx){
   makeChart(`${chartPfx}-chart-daily`,"bar",{labels:labs,datasets:[{label:"IN",data:dIn,backgroundColor:inColor,borderRadius:4},{label:"OUT",data:dOut,backgroundColor:outColor,borderRadius:4}]});
 
   const factories=["SGL","BDD","KGG","KG2","SFC KD"];
-  const facWips=factories.map(f=>allWIP.filter(w=>w.factory===f).reduce((a,w)=>a+Math.max(0,w.wip),0));
+  const facWips=factories.map(f=>allWIP.filter(w=>w.factory===f).reduce((a,w)=>a+w.wip,0));
   makeChart(`${chartPfx}-chart-factory`,"bar",{labels:factories,datasets:[{label:"Current WIP",data:facWips,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2"],borderRadius:4}]},{indexAxis:"y"});
 
   const t30=[];for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);t30.push(d.toISOString().split("T")[0]);}
@@ -1641,7 +1641,7 @@ function renderDashCommon(p,txArr,filteredTx){
   makeChart(`${chartPfx}-chart-donut`,"doughnut",{labels:dLabels,datasets:[{data:dData,backgroundColor:["#2E75B6","#E8A020","#2E7D32","#C62828","#7B1FA2","#546E7A"],borderWidth:2}]});
 
   const products=["Shirt","Short","Jkt","Bls","Skirt","Frock"];
-  const prodWips=products.map(pr=>allWIP.filter(w=>w.product===pr).reduce((a,w)=>a+Math.max(0,w.wip),0));
+  const prodWips=products.map(pr=>allWIP.filter(w=>w.product===pr).reduce((a,w)=>a+w.wip,0));
   makeChart(`${chartPfx}-chart-product`,"bar",{labels:products,datasets:[{label:"WIP",data:prodWips,backgroundColor:inColor,borderRadius:4}]});
 
   // All styles table sorted descending by WIP — with In Washing column
@@ -1701,8 +1701,8 @@ function clearAWFilters(){
 function renderProcessView(){
   const bwMap=getWIPMap(bwTx);
   const awMap=getWIPMap(awTx);
-  const bwTotalWIP=bwMap.reduce((a,w)=>a+Math.max(0,w.wip),0);
-  const awTotalWIP=awMap.reduce((a,w)=>a+Math.max(0,w.wip),0);
+  const bwTotalWIP=bwMap.reduce((a,w)=>a+w.wip,0);
+  const awTotalWIP=awMap.reduce((a,w)=>a+w.wip,0);
   // In washing = qty sent by BW but not yet received in AW
   const allKeys=[...new Set([...bwMap.map(w=>sKey(w.styleName,w.color)),...awMap.map(w=>sKey(w.styleName,w.color))])];
   let inWashing=0;
@@ -1762,7 +1762,7 @@ function renderProcessView(){
 
   // Top factory total WIP
   const allFacMap={};
-  [...bwMap,...awMap].forEach(w=>{allFacMap[w.factory]=(allFacMap[w.factory]||0)+Math.max(0,w.wip);});
+  [...bwMap,...awMap].forEach(w=>{allFacMap[w.factory]=(allFacMap[w.factory]||0)+w.wip;});
   const topF=Object.entries(allFacMap).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById("proc-top-fac").textContent=topF?`${topF[0]} (${topF[1]})`:"—";
 
@@ -2729,7 +2729,7 @@ function renderPlanActual(){
 
     const activePlan=getActivePlan(s.styleName,s.color,selDate);
     const wipEntry=bwWIP.find(w=>w.styleName.toLowerCase()===sn&&w.color.toLowerCase()===cl2);
-    const wip=wipEntry?Math.max(0,wipEntry.wip):0;
+    const wip=wipEntry?wipEntry.wip:0;
     const minD=(activePlan?activePlan.minDispatch:0)||(s.minDispatch||0);
 
     if(!activePlan){
