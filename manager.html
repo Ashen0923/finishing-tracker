@@ -198,11 +198,15 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;line-height:1;}
 .modal-body{padding:22px;}
 #sidebar{transition:width .25s ease;overflow:hidden;}
+.sb-short{display:none;}
+#sidebar.collapsed .sb-full{display:none;}
+#sidebar.collapsed .sb-short{display:inline;}
+#sidebar.collapsed nav button span:last-child{display:inline;}
 #sidebar.collapsed{width:52px;}
 #sidebar.collapsed .sb-logo h1,
 #sidebar.collapsed .sb-logo p,
 #sidebar.collapsed .sb-sec,
-#sidebar.collapsed nav button span:last-child,
+#sidebar.collapsed .sb-full,
 #sidebar.collapsed .sb-footer .ls,
 #sidebar.collapsed .sb-footer>div,
 #sidebar.collapsed #sync-btn,
@@ -452,18 +456,18 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
   <nav>
     <div class="sb-sec">Before Wash</div>
-    <button class="active" onclick="showPage('bw-dash',this)"><span class="ic">&#9632;</span>BW Dashboard</button>
-    <button onclick="showPage('bw-analytics',this)"><span class="ic">&#9656;</span>BW Analytics</button>
+    <button class="active" onclick="showPage('bw-dash',this)"><span class="ic">&#9632;</span><span class="sb-full">BW Dashboard</span><span class="sb-short">BW Dash</span></button>
+    <button onclick="showPage('bw-analytics',this)"><span class="ic">&#9656;</span><span class="sb-full">BW Analytics</span><span class="sb-short">Analytics</span></button>
     <div class="sb-sec">After Wash</div>
-    <button onclick="showPage('aw-dash',this)"><span class="ic">&#9632;</span>AW Dashboard</button>
+    <button onclick="showPage('aw-dash',this)"><span class="ic">&#9632;</span><span class="sb-full">AW Dashboard</span><span class="sb-short">AW Dash</span></button>
     <div class="sb-sec">Reports</div>
-    <button onclick="showPage('process-view',this)"><span class="ic">&#9670;</span>Complete Process</button>
-    <button onclick="showPage('wip-summary',this)"><span class="ic">&#9672;</span>WIP Summary</button>
-    <button onclick="showPage('all-tx',this)"><span class="ic">&#8801;</span>All Transactions</button>
+    <button onclick="showPage('process-view',this)"><span class="ic">&#9670;</span><span class="sb-full">Complete Process</span><span class="sb-short">Process</span></button>
+    <button onclick="showPage('wip-summary',this)"><span class="ic">&#9672;</span><span class="sb-full">WIP Summary</span><span class="sb-short">WIP</span></button>
+    <button onclick="showPage('all-tx',this)"><span class="ic">&#8801;</span><span class="sb-full">All Transactions</span><span class="sb-short">Tx</span></button>
     <div class="sb-sec">Quality</div>
-    <button onclick="showPage('quality',this)"><span class="ic">&#10003;</span>Quality Dashboard</button>
+    <button onclick="showPage('quality',this)"><span class="ic">&#10003;</span><span class="sb-full">Quality Dashboard</span><span class="sb-short">Quality</span></button>
     <div class="sb-sec">Plan</div>
-    <button onclick="showPage('plan-actual',this)"><span class="ic">&#9635;</span>Plan vs Actual</button>
+    <button onclick="showPage('plan-actual',this)"><span class="ic">&#9635;</span><span class="sb-full">Plan vs Actual</span><span class="sb-short">Plan</span></button>
   </nav>
   <div class="sb-footer">
     <div class="ls" style="color:rgba(255,255,255,.5);font-size:10px">Last refreshed: <span id="last-refreshed">—</span></div>
