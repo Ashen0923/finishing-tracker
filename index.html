@@ -199,21 +199,26 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .modal-body{padding:22px;}
 #sidebar{transition:width .25s ease;overflow:hidden;}
 .sb-short{display:none;}
-#sidebar.collapsed .sb-full{display:none;}
-#sidebar.collapsed .sb-short{display:inline;}
-#sidebar.collapsed nav button span:last-child{display:inline;}
-#sidebar.collapsed{width:52px;}
+#sidebar.collapsed{width:60px;}
 #sidebar.collapsed .sb-logo h1,
 #sidebar.collapsed .sb-logo p,
 #sidebar.collapsed .sb-sec,
 #sidebar.collapsed .sb-full,
+#sidebar.collapsed .sb-short,
 #sidebar.collapsed .sb-footer .ls,
 #sidebar.collapsed .sb-footer>div,
 #sidebar.collapsed #sync-btn,
 #sidebar.collapsed #sync-status{display:none !important;}
 #sidebar.collapsed .sb-logo{padding:10px 4px;text-align:center;}
-#sidebar.collapsed nav button{justify-content:center;padding:12px 0;}
-#sidebar.collapsed nav button .ic{margin:0 auto;}
+#sidebar.collapsed nav button{justify-content:center;padding:14px 0;position:relative;}
+#sidebar.collapsed nav button .ic{margin:0 auto;font-size:16px;}
+#sidebar.collapsed nav button:hover::after{
+  content:attr(data-tip);
+  position:absolute;left:64px;top:50%;transform:translateY(-50%);
+  background:var(--navy);color:#fff;padding:5px 10px;border-radius:5px;
+  font-size:11px;white-space:nowrap;z-index:9999;
+  box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;
+}
 #sidebar.collapsed .sb-footer{padding:8px 4px;}
 #main{transition:margin-left .25s ease;}
 </style>
@@ -456,20 +461,20 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
   <nav>
     <div class="sb-sec">Before Wash</div>
-    <button class="active" onclick="showPage('bw-dash',this)"><span class="ic">&#9632;</span><span class="sb-full">BW Dashboard</span><span class="sb-short">BW Dash</span></button>
-    <button onclick="showPage('bw-entry',this)"><span class="ic">&#9998;</span><span class="sb-full">BW Daily Entry</span><span class="sb-short">BW Entry</span></button>
+    <button class="active" onclick="showPage('bw-dash',this)" data-tip="BW Dashboard"><span class="ic">&#9632;</span><span class="sb-full">BW Dashboard</span></button>
+    <button onclick="showPage('bw-entry',this)" data-tip="BW Daily Entry"><span class="ic">&#9998;</span><span class="sb-full">BW Daily Entry</span></button>
     <div class="sb-sec">After Wash</div>
-    <button onclick="showPage('aw-dash',this)"><span class="ic">&#9632;</span><span class="sb-full">AW Dashboard</span><span class="sb-short">AW Dash</span></button>
-    <button onclick="showPage('aw-entry',this)"><span class="ic">&#9998;</span><span class="sb-full">AW Daily Entry</span><span class="sb-short">AW Entry</span></button>
+    <button onclick="showPage('aw-dash',this)" data-tip="AW Dashboard"><span class="ic">&#9632;</span><span class="sb-full">AW Dashboard</span></button>
+    <button onclick="showPage('aw-entry',this)" data-tip="AW Daily Entry"><span class="ic">&#9998;</span><span class="sb-full">AW Daily Entry</span></button>
     <div class="sb-sec">Reports</div>
-    <button onclick="showPage('process-view',this)"><span class="ic">&#9670;</span><span class="sb-full">Complete Process</span><span class="sb-short">Process</span></button>
-    <button onclick="showPage('wip-summary',this)"><span class="ic">&#9672;</span><span class="sb-full">WIP Summary</span><span class="sb-short">WIP</span></button>
-    <button onclick="showPage('all-tx',this)"><span class="ic">&#8801;</span><span class="sb-full">All Transactions</span><span class="sb-short">Tx</span></button>
+    <button onclick="showPage('process-view',this)" data-tip="Complete Process"><span class="ic">&#9670;</span><span class="sb-full">Complete Process</span></button>
+    <button onclick="showPage('wip-summary',this)" data-tip="WIP Summary"><span class="ic">&#9672;</span><span class="sb-full">WIP Summary</span></button>
+    <button onclick="showPage('all-tx',this)" data-tip="All Transactions"><span class="ic">&#8801;</span><span class="sb-full">All Transactions</span></button>
     <div class="sb-sec">Quality</div>
-    <button onclick="showPage('quality',this)"><span class="ic">&#10003;</span><span class="sb-full">Quality Check</span><span class="sb-short">Quality</span></button>
+    <button onclick="showPage('quality',this)" data-tip="Quality Check"><span class="ic">&#10003;</span><span class="sb-full">Quality Check</span></button>
     <div class="sb-sec">Master Data</div>
-    <button onclick="showPage('plan-actual',this)"><span class="ic">&#9635;</span><span class="sb-full">Plan vs Actual</span><span class="sb-short">Plan</span></button>
-    <button onclick="showPage('style-db',this)"><span class="ic">&#9647;</span><span class="sb-full">Style Database</span><span class="sb-short">Styles</span></button>
+    <button onclick="showPage('plan-actual',this)" data-tip="Plan vs Actual"><span class="ic">&#9635;</span><span class="sb-full">Plan vs Actual</span></button>
+    <button onclick="showPage('style-db',this)" data-tip="Style Database"><span class="ic">&#9647;</span><span class="sb-full">Style Database</span></button>
   </nav>
   <div class="sb-footer">
     <div class="ls">Last saved: <span id="last-saved">Not yet saved</span></div>
@@ -3820,7 +3825,7 @@ function toggleSidebar(){
   const collapsed=sb.classList.toggle('collapsed');
   // Update CSS variable so #main margin-left also updates
   document.documentElement.style.setProperty(
-    '--sidebar-w', collapsed ? '52px' : '240px'
+    '--sidebar-w', collapsed ? '60px' : '240px'
   );
   window.dispatchEvent(new Event('resize'));
 }
