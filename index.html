@@ -197,6 +197,14 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .modal-hdr h3{font-size:14px;font-weight:700;}
 .modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;line-height:1;}
 .modal-body{padding:22px;}
+.sidebar{transition:width .25s ease;}
+.sidebar.collapsed{width:52px;overflow:hidden;}
+.sidebar.collapsed .sb-logo h1,.sidebar.collapsed .sb-logo p{display:none;}
+.sidebar.collapsed .sb-sec{display:none;}
+.sidebar.collapsed nav button>span:last-child{display:none;}
+.sidebar.collapsed nav button{justify-content:center;padding:12px 0;}
+.sidebar.collapsed .sb-footer .ls,.sidebar.collapsed .sb-footer>div:not(:last-child){display:none;}
+.sidebar.collapsed .sb-logo{padding:10px 6px;text-align:center;}
 </style>
 </head>
 <body>
@@ -430,7 +438,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 
 <!-- SIDEBAR -->
 <div id="sidebar">
-  <div class="sb-logo">
+  <div class="sb-logo" style="position:relative">
+    <button onclick="toggleSidebar()" title="Toggle sidebar" style="position:absolute;top:0;right:0;background:rgba(255,255,255,.15);border:none;color:#fff;width:24px;height:24px;border-radius:4px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;padding:0">&#9776;</button>
     <h1>Central Finishing<br>Tracker</h1>
     <p>Before Wash &amp; After Wash System</p>
   </div>
@@ -3594,10 +3603,12 @@ function renderBWAnalytics(){
       const satWIP=getBWWIPUpTo(wr.sat,wt);
       const sunWIP=getBWWIPUpTo(wr.end,wt);
       const hasSun=hasEntriesOn(wr.end,wt);
-      const avgWIP=hasSun?(satWIP+sunWIP)/2:satWIP;
+      // Use the last active day WIP only
+      const endWIP=hasSun?sunWIP:satWIP;
+      const endDay=hasSun?"Sun":"Sat";
       const numDays=hasSun?7:6;
-      const leadTime=numDays>0?+(avgWIP/numDays).toFixed(2):0;
-      return {wt,satWIP,sunWIP,hasSun,avgWIP:+avgWIP.toFixed(1),leadTime,numDays};
+      const leadTime=numDays>0?+(endWIP/numDays).toFixed(2):0;
+      return {wt,endWIP,endDay,leadTime,numDays};
     });
 
     // KPI cards
@@ -3606,7 +3617,7 @@ function renderBWAnalytics(){
         <div class="kpi-label">${d.wt}</div>
         <div class="kpi-val">${d.leadTime}</div>
         <div class="kpi-sub">days avg lead time</div>
-        <div style="font-size:11px;color:var(--grey);margin-top:4px">Avg WIP: ${d.avgWIP} | Days: ${d.numDays}</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:4px">WIP (${d.endDay}): ${d.endWIP} | Days: ${d.numDays}</div>
       </div>`).join("");
 
     // Charts
@@ -3616,10 +3627,7 @@ function renderBWAnalytics(){
     });
     makeChart("bwa-chart-wip","bar",{
       labels:washTypes,
-      datasets:[
-        {label:"Sat WIP",data:ltData.map(d=>d.satWIP),backgroundColor:"#BDD7EE",borderRadius:4},
-        {label:"Sun WIP",data:ltData.map(d=>d.sunWIP),backgroundColor:"#2E75B6",borderRadius:4}
-      ]
+      datasets:[{label:"Week-End WIP",data:ltData.map(d=>d.endWIP),backgroundColor:["#2E75B6","#E8A020","#2E7D32","#7B1FA2"],borderRadius:4}]
     });
 
   } else {
@@ -3793,6 +3801,12 @@ function refreshDashboards(){
   try{ renderWIPSummary(); }catch(e){}
   try{ renderPlanActual(); }catch(e){}
   try{ renderQCRecent(); }catch(e){}
+}
+
+function toggleSidebar(){
+  const sb=document.querySelector('.sidebar');
+  sb.classList.toggle('collapsed');
+  localStorage.setItem('sidebarCollapsed',sb.classList.contains('collapsed'));
 }
 
 // ── INIT ─────────────────────────────────────────────
