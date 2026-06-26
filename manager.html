@@ -197,17 +197,21 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
 .modal-hdr h3{font-size:14px;font-weight:700;}
 .modal-close{background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;line-height:1;}
 .modal-body{padding:22px;}
-#sidebar{transition:width .25s ease;}
-#sidebar.collapsed{width:52px;overflow:hidden;}
-#sidebar.collapsed .sb-logo h1,#sidebar.collapsed .sb-logo p{display:none;}
-#sidebar.collapsed .sb-sec{display:none;}
-#sidebar.collapsed nav button span:not(.ic){display:none;}
-#sidebar.collapsed nav button{justify-content:center;padding:12px 0;text-align:center;}
-#sidebar.collapsed .sb-footer .ls,#sidebar.collapsed .sb-footer>div,
-#sidebar.collapsed #sync-btn,#sidebar.collapsed #sync-status,
-#sidebar.collapsed .sb-footer button:not([onclick*="toggle"]){display:none;}
-#sidebar.collapsed .sb-logo{padding:10px 6px;text-align:center;}
-#sidebar.collapsed .sb-logo button{position:static !important;}
+#sidebar{transition:width .25s ease;flex-shrink:0;overflow:hidden;}
+#sidebar.collapsed{width:52px;}
+#sidebar.collapsed .sb-logo h1,
+#sidebar.collapsed .sb-logo p,
+#sidebar.collapsed .sb-sec,
+#sidebar.collapsed nav button span:last-child,
+#sidebar.collapsed .sb-footer .ls,
+#sidebar.collapsed .sb-footer>div,
+#sidebar.collapsed #sync-btn,
+#sidebar.collapsed #sync-status{display:none !important;}
+#sidebar.collapsed .sb-logo{padding:10px 4px;text-align:center;}
+#sidebar.collapsed nav button{justify-content:center;padding:12px 0;width:100%;}
+#sidebar.collapsed nav button .ic{margin:0 auto;}
+#sidebar.collapsed .sb-footer{padding:8px 4px;}
+#main{transition:margin-left .25s ease;}
 </style>
 </head>
 <body>
@@ -3797,8 +3801,18 @@ function refreshDashboards(){
 
 function toggleSidebar(){
   const sb=document.getElementById('sidebar');
+  const main=document.getElementById('main');
   if(!sb) return;
+  const isCollapsing=!sb.classList.contains('collapsed');
   sb.classList.toggle('collapsed');
+  if(main){
+    // Get computed sidebar width after toggle
+    setTimeout(()=>{
+      const w=sb.offsetWidth;
+      main.style.marginLeft=w+'px';
+    },10);
+  }
+  window.dispatchEvent(new Event('resize'));
 }
 
 // ── INIT ─────────────────────────────────────────────
