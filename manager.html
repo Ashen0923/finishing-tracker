@@ -438,6 +438,7 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   <nav>
     <div class="sb-sec">Before Wash</div>
     <button class="active" onclick="showPage('bw-dash',this)"><span class="ic">&#9632;</span>BW Dashboard</button>
+    <button onclick="showPage('bw-analytics',this)"><span class="ic">&#9656;</span>BW Analytics</button>
     <div class="sb-sec">After Wash</div>
     <button onclick="showPage('aw-dash',this)"><span class="ic">&#9632;</span>AW Dashboard</button>
     <div class="sb-sec">Reports</div>
@@ -1077,6 +1078,75 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   </div>
 </div>
 
+<!-- BW ANALYTICS (Manager Only) -->
+<div id="page-bw-analytics" class="page">
+  <div class="page-top">
+    <div><h2>BW Analytics</h2><p>Before Wash lead time, tack count analysis — weekly &amp; monthly</p></div>
+    <span class="badge-bw">BEFORE WASH</span>
+  </div>
+  <div class="page-body">
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="fg"><label>View</label>
+        <select id="bwa-view" onchange="onBWAViewChange()">
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select></div>
+      <div class="fg" id="bwa-week-wrap"><label>Week</label>
+        <input type="date" id="bwa-week-date" onchange="renderBWAnalytics()"/>
+        <div style="font-size:10px;color:var(--grey);margin-top:3px" id="bwa-week-label"></div>
+      </div>
+      <div class="fg" id="bwa-month-wrap" style="display:none"><label>Month</label>
+        <input type="month" id="bwa-month" onchange="renderBWAnalytics()"/></div>
+      <button class="btn btn-primary" onclick="renderBWAnalytics()" style="height:36px;align-self:flex-end">Apply</button>
+    </div>
+
+    <!-- SECTION 1: Wash Type Lead Time -->
+    <div class="section" style="margin-bottom:20px">
+      <div class="section-hdr"><h3>Wash Type Lead Time</h3><span style="font-size:11px;color:var(--grey)" id="bwa-lt-period"></span></div>
+      <div class="kpi-row" id="bwa-lt-kpis"></div>
+      <div class="chart-row">
+        <div class="chart-box" style="flex:1"><h4>Lead Time by Wash Type (days)</h4><canvas id="bwa-chart-lt"></canvas></div>
+        <div class="chart-box" style="flex:1"><h4>Average WIP by Wash Type</h4><canvas id="bwa-chart-wip"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Product Wise Tack Count -->
+    <div class="section" style="margin-bottom:20px">
+      <div class="section-hdr"><h3>Product Wise BW Tack Count</h3></div>
+      <div class="kpi-row" id="bwa-prod-kpis"></div>
+      <div class="chart-row">
+        <div class="chart-box" style="flex:1"><h4>Total BW Tack Count by Product</h4><canvas id="bwa-chart-prod"></canvas></div>
+        <div class="chart-box" style="flex:1"><h4>Styles Processed by Product</h4><canvas id="bwa-chart-prod-styles"></canvas></div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Top Tack Operations -->
+    <div class="section" style="margin-bottom:20px">
+      <div class="section-hdr"><h3>Most Common Tack Operations</h3></div>
+      <div class="kpi-row" id="bwa-tack-kpis"></div>
+      <div class="chart-row">
+        <div class="chart-box"><h4>Style Count per Tack Operation</h4><canvas id="bwa-chart-tack"></canvas></div>
+        <div class="chart-box"><h4>Tack Operation Ranking</h4>
+          <div id="bwa-tack-table" style="padding:10px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Factory Wise Tack Count -->
+    <div class="section" style="margin-bottom:20px">
+      <div class="section-hdr"><h3>Factory Wise BW Tack Count</h3></div>
+      <div class="kpi-row" id="bwa-fac-kpis"></div>
+      <div class="chart-row">
+        <div class="chart-box" style="flex:1"><h4>Total BW Tack Count by Factory</h4><canvas id="bwa-chart-fac"></canvas></div>
+        <div class="chart-box" style="flex:1"><h4>Styles Processed by Factory</h4><canvas id="bwa-chart-fac-styles"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- PLAN VS ACTUAL -->
 <div id="page-plan-actual" class="page">
   <div class="page-top">
@@ -1520,7 +1590,7 @@ function showPage(page,btn){
   const map={
     "bw-dash":renderBWDash,"aw-dash":renderAWDash,
     "process-view":renderProcessView,"wip-summary":renderWIPSummary,
-    "all-tx":renderAllTx,"plan-actual":renderPlanActual,"style-db":renderStyleDB,"quality":initQualityPage,
+    "all-tx":renderAllTx,"plan-actual":renderPlanActual,"style-db":renderStyleDB,"bw-analytics":initBWAnalytics,"quality":initQualityPage,
     "bw-entry":()=>{renderTodayEntries("bw");updateWIPPrev("bf");},
     "aw-entry":()=>{renderTodayEntries("aw");updateWIPPrev("af");}
   };
@@ -3447,6 +3517,263 @@ function saveEditQC(){
   showAlert("qc-alert","Quality entry updated. Remember to save to GitHub.","success");
   if(activeQCTab==="dashboard") renderQCDash();
 }
+
+// ── BW ANALYTICS ─────────────────────────────────────
+function onBWAViewChange(){
+  const view=document.getElementById("bwa-view").value;
+  document.getElementById("bwa-week-wrap").style.display=view==="weekly"?"block":"none";
+  document.getElementById("bwa-month-wrap").style.display=view==="monthly"?"block":"none";
+  renderBWAnalytics();
+}
+
+function getWeekRange(dateStr){
+  // Returns {start, end} for Mon-Sun week containing dateStr
+  const d=new Date(dateStr);
+  const day=d.getDay(); // 0=Sun,1=Mon...6=Sat
+  const diffToMon=day===0?-6:1-day;
+  const mon=new Date(d); mon.setDate(d.getDate()+diffToMon);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const fmt=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  return {start:fmt(mon),end:fmt(sun),
+    sat:fmt(new Date(mon.getTime()+5*86400000)),
+    label:`${mon.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}`};
+}
+
+function getMonthRange(monthStr){
+  const [yr,mo]=monthStr.split('-').map(Number);
+  const start=`${yr}-${String(mo).padStart(2,'0')}-01`;
+  const lastDay=new Date(yr,mo,0).getDate();
+  const end=`${yr}-${String(mo).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+  return {start,end,days:lastDay};
+}
+
+function getBWWIPUpTo(dateStr, washType){
+  // Cumulative WIP for washType up to and including dateStr
+  const txs=bwTx.filter(t=>{
+    if(washType&&t.washType!==washType) return false;
+    const d=t.inDate||t.outDate||"";
+    return d<=dateStr;
+  });
+  const totalIn=txs.reduce((a,t)=>a+(t.inQty!==""?Number(t.inQty):0),0);
+  const totalOut=txs.reduce((a,t)=>a+(t.outQty!==""?Number(t.outQty):0),0);
+  return totalIn-totalOut;
+}
+
+function hasEntriesOn(dateStr, washType){
+  return bwTx.some(t=>{
+    if(washType&&t.washType!==washType) return false;
+    return t.inDate===dateStr||t.outDate===dateStr;
+  });
+}
+
+function renderBWAnalytics(){
+  const view=document.getElementById("bwa-view").value;
+  let periodStart="",periodEnd="",days=0,periodLabel="";
+
+  if(view==="weekly"){
+    const wdate=document.getElementById("bwa-week-date").value;
+    if(!wdate) return;
+    const wr=getWeekRange(wdate);
+    periodStart=wr.start; periodEnd=wr.end;
+    document.getElementById("bwa-week-label").textContent=wr.label;
+    document.getElementById("bwa-lt-period").textContent=wr.label;
+
+    // ── SECTION 1: Lead Time by Wash Type (Weekly) ──
+    const washTypes=["Denim","Gmt Dye","Pigment Dye","Normal"];
+    const ltData=washTypes.map(wt=>{
+      const satWIP=getBWWIPUpTo(wr.sat,wt);
+      const sunWIP=getBWWIPUpTo(wr.end,wt);
+      const hasSun=hasEntriesOn(wr.end,wt);
+      const avgWIP=hasSun?(satWIP+sunWIP)/2:satWIP;
+      const numDays=hasSun?7:6;
+      const leadTime=numDays>0?+(avgWIP/numDays).toFixed(2):0;
+      return {wt,satWIP,sunWIP,hasSun,avgWIP:+avgWIP.toFixed(1),leadTime,numDays};
+    });
+
+    // KPI cards
+    document.getElementById("bwa-lt-kpis").innerHTML=ltData.map(d=>`
+      <div class="kpi-card">
+        <div class="kpi-label">${d.wt}</div>
+        <div class="kpi-val">${d.leadTime}</div>
+        <div class="kpi-sub">days avg lead time</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:4px">Avg WIP: ${d.avgWIP} | Days: ${d.numDays}</div>
+      </div>`).join("");
+
+    // Charts
+    makeChart("bwa-chart-lt","bar",{
+      labels:washTypes,
+      datasets:[{label:"Lead Time (days)",data:ltData.map(d=>d.leadTime),backgroundColor:["#2E75B6","#E8A020","#2E7D32","#7B1FA2"],borderRadius:4}]
+    });
+    makeChart("bwa-chart-wip","bar",{
+      labels:washTypes,
+      datasets:[
+        {label:"Sat WIP",data:ltData.map(d=>d.satWIP),backgroundColor:"#BDD7EE",borderRadius:4},
+        {label:"Sun WIP",data:ltData.map(d=>d.sunWIP),backgroundColor:"#2E75B6",borderRadius:4}
+      ]
+    });
+
+  } else {
+    // Monthly
+    const mval=document.getElementById("bwa-month").value;
+    if(!mval) return;
+    const mr=getMonthRange(mval);
+    periodStart=mr.start; periodEnd=mr.end; days=mr.days;
+    document.getElementById("bwa-lt-period").textContent=new Date(mval+"-01").toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+
+    const washTypes=["Denim","Gmt Dye","Pigment Dye","Normal"];
+    const ltData=washTypes.map(wt=>{
+      const startWIP=getBWWIPUpTo(mr.start,wt);
+      const endWIP=getBWWIPUpTo(mr.end,wt);
+      const avgWIP=(startWIP+endWIP)/2;
+      const leadTime=days>0?+(avgWIP/days).toFixed(2):0;
+      return {wt,startWIP,endWIP,avgWIP:+avgWIP.toFixed(1),leadTime,days};
+    });
+
+    document.getElementById("bwa-lt-kpis").innerHTML=ltData.map(d=>`
+      <div class="kpi-card">
+        <div class="kpi-label">${d.wt}</div>
+        <div class="kpi-val">${d.leadTime}</div>
+        <div class="kpi-sub">days avg lead time</div>
+        <div style="font-size:11px;color:var(--grey);margin-top:4px">Avg WIP: ${d.avgWIP} | Days: ${d.days}</div>
+      </div>`).join("");
+
+    makeChart("bwa-chart-lt","bar",{
+      labels:washTypes,
+      datasets:[{label:"Lead Time (days)",data:ltData.map(d=>d.leadTime),backgroundColor:["#2E75B6","#E8A020","#2E7D32","#7B1FA2"],borderRadius:4}]
+    });
+    makeChart("bwa-chart-wip","bar",{
+      labels:washTypes,
+      datasets:[
+        {label:"Start WIP",data:ltData.map(d=>d.startWIP),backgroundColor:"#BDD7EE",borderRadius:4},
+        {label:"End WIP",data:ltData.map(d=>d.endWIP),backgroundColor:"#2E75B6",borderRadius:4}
+      ]
+    });
+  }
+
+  // ── Get unique styles processed in period ──
+  const periodTx=bwTx.filter(t=>{
+    const d=t.inDate||t.outDate||"";
+    return d>=periodStart&&d<=periodEnd;
+  });
+  const uniqueStyleKeys=[...new Set(periodTx.map(t=>t.styleKey||t.styleName.toLowerCase()+"|||"+t.color.toLowerCase()))];
+  const periodStyles=uniqueStyleKeys.map(k=>styles.find(s=>s.styleKey===k)).filter(Boolean);
+
+  // ── SECTION 2: Product Wise Tack Count ──
+  const products=["Shirt","Short","Jkt","Bls","Skirt","Frock"];
+  const prodData=products.map(p=>{
+    const pStyles=periodStyles.filter(s=>s.product===p);
+    const totalTack=pStyles.reduce((a,s)=>a+Number(s.bwTackCount||0),0);
+    return {p,count:pStyles.length,totalTack};
+  }).filter(d=>d.count>0);
+
+  document.getElementById("bwa-prod-kpis").innerHTML=prodData.length?prodData.map(d=>`
+    <div class="kpi-card">
+      <div class="kpi-label">${d.p}</div>
+      <div class="kpi-val">${d.totalTack}</div>
+      <div class="kpi-sub">Total BW Tack Count</div>
+      <div style="font-size:11px;color:var(--grey);margin-top:4px">${d.count} style${d.count!==1?"s":""} processed</div>
+    </div>`).join(""):'<div class="no-data" style="padding:20px">No data for this period.</div>';
+
+  makeChart("bwa-chart-prod","bar",{
+    labels:prodData.map(d=>d.p),
+    datasets:[{label:"Total BW Tack Count",data:prodData.map(d=>d.totalTack),backgroundColor:"#2E75B6",borderRadius:4}]
+  });
+  makeChart("bwa-chart-prod-styles","bar",{
+    labels:prodData.map(d=>d.p),
+    datasets:[{label:"Styles Processed",data:prodData.map(d=>d.count),backgroundColor:"#00695C",borderRadius:4}]
+  });
+
+  // ── SECTION 3: Tack Operations ──
+  const tackOps=[
+    {key:"bwWaistTie",label:"Waist Tie"},
+    {key:"bwPlacket",label:"Placket Fabric Stitch"},
+    {key:"bwSleeve",label:"Sleeve Open Stitch"},
+    {key:"bwBottomHem",label:"Bottom Hem Stitch"},
+    {key:"bwDummy",label:"Dummy Button/Loose Tack"},
+    {key:"bwPocket",label:"Pocket Bag Close"},
+    {key:"bwWaistTack",label:"Waist Tack"}
+  ];
+  const tackData=tackOps.map(op=>{
+    const count=periodStyles.filter(s=>s[op.key]==="Yes").length;
+    return {...op,count};
+  }).sort((a,b)=>b.count-a.count);
+
+  const topTack=tackData[0];
+  document.getElementById("bwa-tack-kpis").innerHTML=`
+    <div class="kpi-card g">
+      <div class="kpi-label">Most Common Operation</div>
+      <div class="kpi-val" style="font-size:16px;margin-top:6px">${topTack&&topTack.count>0?topTack.label:"—"}</div>
+      <div class="kpi-sub">${topTack&&topTack.count>0?topTack.count+" styles":""}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Styles Processed</div>
+      <div class="kpi-val">${periodStyles.length}</div>
+      <div class="kpi-sub">In this period</div>
+    </div>
+    <div class="kpi-card o">
+      <div class="kpi-label">Tack Operations Used</div>
+      <div class="kpi-val">${tackData.filter(d=>d.count>0).length}</div>
+      <div class="kpi-sub">out of ${tackOps.length} types</div>
+    </div>`;
+
+  makeChart("bwa-chart-tack","bar",{
+    labels:tackData.map(d=>d.label),
+    datasets:[{label:"Style Count",data:tackData.map(d=>d.count),backgroundColor:tackData.map(d=>d.count===Math.max(...tackData.map(x=>x.count))?"#2E7D32":"#BDD7EE"),borderRadius:4}]
+  },{indexAxis:"y"});
+
+  document.getElementById("bwa-tack-table").innerHTML=`
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead><tr style="background:var(--navy);color:#fff">
+        <th style="padding:8px;text-align:left">#</th>
+        <th style="padding:8px;text-align:left">Tack Operation</th>
+        <th style="padding:8px;text-align:center">Styles</th>
+      </tr></thead>
+      <tbody>${tackData.map((d,i)=>`
+        <tr style="border-bottom:1px solid var(--border);${i===0?'background:#E8F5E9':''}">
+          <td style="padding:8px"><span class="rank-num">${i+1}</span></td>
+          <td style="padding:8px"><strong>${d.label}</strong></td>
+          <td style="padding:8px;text-align:center">${d.count>0?`<span class="badge bl">${d.count}</span>`:'<span class="badge bz">0</span>'}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+
+  // ── SECTION 4: Factory Wise Tack Count ──
+  const factories=["SGL","BDD","KGG","KG2","SFC KD"];
+  const facData=factories.map(f=>{
+    const fStyles=periodStyles.filter(s=>s.factory===f);
+    const totalTack=fStyles.reduce((a,s)=>a+Number(s.bwTackCount||0),0);
+    return {f,count:fStyles.length,totalTack};
+  }).filter(d=>d.count>0);
+
+  document.getElementById("bwa-fac-kpis").innerHTML=facData.length?facData.map(d=>`
+    <div class="kpi-card">
+      <div class="kpi-label">${d.f}</div>
+      <div class="kpi-val">${d.totalTack}</div>
+      <div class="kpi-sub">Total BW Tack Count</div>
+      <div style="font-size:11px;color:var(--grey);margin-top:4px">${d.count} style${d.count!==1?"s":""} processed</div>
+    </div>`).join(""):'<div class="no-data" style="padding:20px">No data for this period.</div>';
+
+  makeChart("bwa-chart-fac","bar",{
+    labels:facData.map(d=>d.f),
+    datasets:[{label:"Total BW Tack Count",data:facData.map(d=>d.totalTack),backgroundColor:"#E8A020",borderRadius:4}]
+  });
+  makeChart("bwa-chart-fac-styles","bar",{
+    labels:facData.map(d=>d.f),
+    datasets:[{label:"Styles Processed",data:facData.map(d=>d.count),backgroundColor:"#C62828",borderRadius:4}]
+  });
+}
+
+function initBWAnalytics(){
+  // Set defaults — current week and current month
+  const t=today();
+  document.getElementById("bwa-week-date").value=t;
+  document.getElementById("bwa-month").value=t.slice(0,7);
+  const wr=getWeekRange(t);
+  document.getElementById("bwa-week-label").textContent=wr.label;
+  document.getElementById("bwa-lt-period").textContent=wr.label;
+  renderBWAnalytics();
+}
+
 
 // ── AUTO REFRESH DASHBOARDS ──────────────────────────
 function refreshDashboards(){
