@@ -501,8 +501,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         </select></div>
       <div class="fg" id="bdf-cw1" style="display:none"><label>From</label><input type="date" id="bdf-from" onchange="renderBWDash()"/></div>
       <div class="fg" id="bdf-cw2" style="display:none"><label>To</label><input type="date" id="bdf-to" onchange="renderBWDash()"/></div>
-      <div class="fg"><label>Style Name</label><input type="text" id="bdf-style" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label><input type="text" id="bdf-color" placeholder="Search…" oninput="renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Style Name</label><input type="text" id="bdf-style" placeholder="Search…" oninput="populateColorFilter('bdf-style','bdf-color');renderBWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><select id="bdf-color" onchange="renderBWDash()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="bdf-factory" onchange="renderBWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -629,8 +629,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         </select></div>
       <div class="fg" id="adf-cw1" style="display:none"><label>From</label><input type="date" id="adf-from" onchange="renderAWDash()"/></div>
       <div class="fg" id="adf-cw2" style="display:none"><label>To</label><input type="date" id="adf-to" onchange="renderAWDash()"/></div>
-      <div class="fg"><label>Style Name</label><input type="text" id="adf-style" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label><input type="text" id="adf-color" placeholder="Search…" oninput="renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Style Name</label><input type="text" id="adf-style" placeholder="Search…" oninput="populateColorFilter('adf-style','adf-color');renderAWDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><select id="adf-color" onchange="renderAWDash()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="adf-factory" onchange="renderAWDash()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Product</label>
@@ -747,9 +747,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
   <div class="page-body">
     <div class="filter-bar">
       <div class="fg"><label>Style Name</label>
-        <input type="text" id="proc-filter-style" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <input type="text" id="proc-filter-style" placeholder="Search…" oninput="populateColorFilter('proc-filter-style','proc-filter-color');renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Color</label>
-        <input type="text" id="proc-filter-color" placeholder="Search…" oninput="renderProcessView()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <select id="proc-filter-color" onchange="renderProcessView()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="proc-filter-factory" onchange="renderProcessView()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Stage</label>
@@ -807,9 +807,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg"><label>Process</label>
         <select id="ws-process" onchange="renderWIPSummary()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
       <div class="fg"><label>Style Name</label>
-        <input type="text" id="ws-style" placeholder="Search…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <input type="text" id="ws-style" placeholder="Search…" oninput="populateColorFilter('ws-style','ws-color');renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Color</label>
-        <input type="text" id="ws-color" placeholder="Search…" oninput="renderWIPSummary()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <select id="ws-color" onchange="renderWIPSummary()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="ws-factory" onchange="renderWIPSummary()"><option value="">All Factories</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Status</label>
@@ -835,8 +835,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
         <select id="tx-process" onchange="renderAllTx()"><option value="both">Both</option><option value="bw">Before Wash</option><option value="aw">After Wash</option></select></div>
       <div class="fg"><label>From Date</label><input type="date" id="tx-from" onchange="renderAllTx()"/></div>
       <div class="fg"><label>To Date</label><input type="date" id="tx-to" onchange="renderAllTx()"/></div>
-      <div class="fg"><label>Style</label><input type="text" id="tx-style" placeholder="Search…" oninput="renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-      <div class="fg"><label>Color</label><input type="text" id="tx-color" placeholder="Search…" oninput="renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Style</label><input type="text" id="tx-style" placeholder="Search…" oninput="populateColorFilter('tx-style','tx-color');renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><select id="tx-color" onchange="renderAllTx()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="tx-factory" onchange="renderAllTx()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
       <div class="fg"><label>Show Qty</label>
@@ -1072,8 +1072,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="filter-bar">
         <div class="fg"><label>From Date</label><input type="date" id="qcd-from" onchange="renderQCDash()"/></div>
         <div class="fg"><label>To Date</label><input type="date" id="qcd-to" onchange="renderQCDash()"/></div>
-        <div class="fg"><label>Style Name</label><input type="text" id="qcd-style" placeholder="Search…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
-        <div class="fg"><label>Color</label><input type="text" id="qcd-color" placeholder="Search…" oninput="renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <div class="fg"><label>Style Name</label><input type="text" id="qcd-style" placeholder="Search…" oninput="populateColorFilter('qcd-style','qcd-color');renderQCDash()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <div class="fg"><label>Color</label><select id="qcd-color" onchange="renderQCDash()"><option value="">All Colors</option></select></div>
         <div class="fg"><label>Factory</label>
           <select id="qcd-factory" onchange="renderQCDash()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
         <button class="btn-clear" onclick="clearQCDashFilters()">Clear</button>
@@ -1105,8 +1105,8 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="filter-bar">
         <div class="fg"><label>From Date</label><input type="date" id="qcr-from" onchange="renderQCRecords()"/></div>
         <div class="fg"><label>To Date</label><input type="date" id="qcr-to" onchange="renderQCRecords()"/></div>
-        <div class="fg"><label>Style</label><input type="text" id="qcr-style" placeholder="Search…" oninput="renderQCRecords()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
-      <div class="fg"><label>Color</label><input type="text" id="qcr-color" placeholder="Search…" oninput="renderQCRecords()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
+        <div class="fg"><label>Style</label><input type="text" id="qcr-style" placeholder="Search…" oninput="populateColorFilter('qcr-style','qcr-color');renderQCRecords()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
+      <div class="fg"><label>Color</label><select id="qcr-color" onchange="renderQCRecords()"><option value="">All Colors</option></select></div>
         <div class="fg"><label>Factory</label>
           <select id="qcr-factory" onchange="renderQCRecords()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
         <button class="btn-clear" onclick="clearQCRecordFilters()">Clear</button>
@@ -1282,9 +1282,9 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     <!-- Table Filters -->
     <div class="filter-bar" style="margin-bottom:12px">
       <div class="fg"><label>Style Name</label>
-        <input type="text" id="pva-tbl-style" placeholder="Search…" oninput="renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <input type="text" id="pva-tbl-style" placeholder="Search…" oninput="populateColorFilter('pva-tbl-style','pva-tbl-color');renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Color</label>
-        <input type="text" id="pva-tbl-color" placeholder="Search…" oninput="renderPlanActual()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+        <select id="pva-tbl-color" onchange="renderPlanActual()"><option value="">All Colors</option></select></div>
       <div class="fg"><label>Factory</label>
         <select id="pva-tbl-factory" onchange="renderPlanActual()">
           <option value="">All Factories</option>
@@ -1693,7 +1693,7 @@ function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId,styleId,colorId)
     if(product&&tx.product!==product)return false;
     if(wash&&tx.washType!==wash)return false;
     if(styleF&&!tx.styleName.toLowerCase().includes(styleF))return false;
-    if(colorF&&!tx.color.toLowerCase().includes(colorF))return false;
+    if(colorF&&tx.color.toLowerCase()!==colorF.toLowerCase())return false;
     return true;
   });
 }
@@ -2003,7 +2003,7 @@ function renderProcessView(){
     // Apply table filters
     const procColorF2=document.getElementById("proc-filter-color")?document.getElementById("proc-filter-color").value.toLowerCase():"";
     if(procStyleF&&!name.toLowerCase().includes(procStyleF)) return;
-    if(procColorF2&&!color.toLowerCase().includes(procColorF2)) return;
+    if(procColorF2&&color!==procColorF2) return;
     if(procFacF&&factory!==procFacF) return;
     if(procStageF){
       const stageText=stage.toLowerCase();
@@ -2026,9 +2026,9 @@ function renderWIPSummary(){
   let data=[];
   if(proc==="both"||proc==="bw") getWIPMap(bwTx).forEach(w=>data.push({...w,process:"Before Wash"}));
   if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
-  const colorF2=document.getElementById("ws-color")?document.getElementById("ws-color").value.toLowerCase():"";
+  const colorF2=document.getElementById("ws-color")?document.getElementById("ws-color").value:""
   if(styleF) data=data.filter(d=>d.styleName.toLowerCase().includes(styleF));
-  if(colorF2) data=data.filter(d=>d.color.toLowerCase().includes(colorF2));
+  if(colorF2) data=data.filter(d=>d.color===colorF2);
   if(fac) data=data.filter(d=>d.factory===fac);
   if(stat==="open") data=data.filter(d=>d.wip>0);
   if(stat==="cleared") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="cleared");
@@ -2060,7 +2060,7 @@ function renderAllTx(){
   if(from) data=data.filter(t=>(t.inDate||t.outDate)>=from);
   if(to)   data=data.filter(t=>(t.inDate||t.outDate)<=to);
   if(style) data=data.filter(t=>t.styleName.toLowerCase().includes(style));
-  if(color) data=data.filter(t=>t.color.toLowerCase().includes(color));
+  if(color) data=data.filter(t=>t.color===color);
   if(fac) data=data.filter(t=>t.factory===fac);
 
   // Filter by IN/OUT qty presence
@@ -2103,7 +2103,20 @@ function clearWIPFilters(){
   });
   renderWIPSummary();
 }
-function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-color","tx-factory","tx-qty-filter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==="tx-process"?"both":id==="tx-qty-filter"?"both":"";});renderAllTx();}
+function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-color","tx-factory","tx-qty-filter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==="tx-process"?"both":id==="tx-qty-filter"?"both":"";});populateColorFilter("tx-style","tx-color");renderAllTx();}
+
+// ── COLOR FILTER POPULATE ────────────────────────────
+function populateColorFilter(styleId, colorId){
+  const styleVal=document.getElementById(styleId).value.trim().toLowerCase();
+  const colorSel=document.getElementById(colorId);
+  if(!colorSel) return;
+  const prevVal=colorSel.value;
+  // Get matching colors from styles array
+  const colors=styleVal
+    ?[...new Set(styles.filter(s=>s.styleName.toLowerCase().includes(styleVal)).map(s=>s.color))]
+    :[...new Set(styles.map(s=>s.color))].sort();
+  colorSel.innerHTML='<option value="">All Colors</option>'+colors.map(col=>`<option value="${col}"${col===prevVal?' selected':''}>${col}</option>`).join('');
+}
 
 // ── AUTOCOMPLETE ─────────────────────────────────────
 function styleAC(val,prefix){
@@ -2991,7 +3004,7 @@ function renderPlanActual(){
   const tblFactory=document.getElementById("pva-tbl-factory")?document.getElementById("pva-tbl-factory").value:"";
   const tblStatus=document.getElementById("pva-tbl-status")?document.getElementById("pva-tbl-status").value:"";
   if(tblStyle) rows=rows.filter(r=>r.styleName.toLowerCase().includes(tblStyle));
-  if(tblColor) rows=rows.filter(r=>r.color.toLowerCase().includes(tblColor));
+  if(tblColor) rows=rows.filter(r=>r.color===tblColor);
   if(tblFactory) rows=rows.filter(r=>r.factory===tblFactory);
   if(tblStatus) rows=rows.filter(r=>r.dispatchStatus===tblStatus||(tblStatus==="manual"&&r.manuallyCompleted));
 
@@ -3337,7 +3350,7 @@ function filterQC(from,to,factory,style,color){
     if(to&&q.date>to) return false;
     if(factory&&q.factory!==factory) return false;
     if(style&&!q.styleName.toLowerCase().includes(style.toLowerCase())) return false;
-    if(color&&!q.color.toLowerCase().includes(color.toLowerCase())) return false;
+    if(color&&q.color!==color) return false;
     return true;
   });
 }
