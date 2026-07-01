@@ -2011,7 +2011,7 @@ function renderProcessView(){
     // Apply table filters
     const procColorF2=document.getElementById("proc-filter-color")?document.getElementById("proc-filter-color").value.toLowerCase():"";
     if(procStyleF&&!name.toLowerCase().includes(procStyleF)) return;
-    if(procColorF2&&color!==procColorF2) return;
+    if(procColorF2&&color.toLowerCase()!==procColorF2.toLowerCase()) return;
     if(procFacF&&factory!==procFacF) return;
     if(procStageF){
       const stageText=stage.toLowerCase();
@@ -2036,7 +2036,7 @@ function renderWIPSummary(){
   if(proc==="both"||proc==="aw") getWIPMap(awTx).forEach(w=>data.push({...w,process:"After Wash"}));
   const colorF2=document.getElementById("ws-color")?document.getElementById("ws-color").value:""
   if(styleF) data=data.filter(d=>d.styleName.toLowerCase().includes(styleF));
-  if(colorF2) data=data.filter(d=>d.color===colorF2);
+  if(colorF2) data=data.filter(d=>d.color.toLowerCase()===colorF2.toLowerCase());
   if(fac) data=data.filter(d=>d.factory===fac);
   if(stat==="open") data=data.filter(d=>d.wip>0);
   if(stat==="cleared") data=data.filter(d=>getPlanStatus(d.styleName,d.color,d.totalIn,d.wip)==="cleared");
@@ -2058,7 +2058,7 @@ function renderAllTx(){
   const from=document.getElementById("tx-from").value;
   const to=document.getElementById("tx-to").value;
   const style=document.getElementById("tx-style").value.toLowerCase();
-  const color=document.getElementById("tx-color")?document.getElementById("tx-color").value.toLowerCase():"";
+  const color=document.getElementById("tx-color")?document.getElementById("tx-color").value:"";
   const fac=document.getElementById("tx-factory").value;
   const qtyFilter=document.getElementById("tx-qty-filter")?document.getElementById("tx-qty-filter").value:"both";
 
@@ -2068,7 +2068,7 @@ function renderAllTx(){
   if(from) data=data.filter(t=>(t.inDate||t.outDate)>=from);
   if(to)   data=data.filter(t=>(t.inDate||t.outDate)<=to);
   if(style) data=data.filter(t=>t.styleName.toLowerCase().includes(style));
-  if(color) data=data.filter(t=>t.color===color);
+  if(color) data=data.filter(t=>t.color.toLowerCase()===color.toLowerCase());
   if(fac) data=data.filter(t=>t.factory===fac);
 
   // Filter by IN/OUT qty presence
@@ -3012,7 +3012,7 @@ function renderPlanActual(){
   const tblFactory=document.getElementById("pva-tbl-factory")?document.getElementById("pva-tbl-factory").value:"";
   const tblStatus=document.getElementById("pva-tbl-status")?document.getElementById("pva-tbl-status").value:"";
   if(tblStyle) rows=rows.filter(r=>r.styleName.toLowerCase().includes(tblStyle));
-  if(tblColor) rows=rows.filter(r=>r.color===tblColor);
+  if(tblColor) rows=rows.filter(r=>r.color.toLowerCase()===tblColor.toLowerCase());
   if(tblFactory) rows=rows.filter(r=>r.factory===tblFactory);
   if(tblStatus) rows=rows.filter(r=>r.dispatchStatus===tblStatus||(tblStatus==="manual"&&r.manuallyCompleted));
 
@@ -3365,7 +3365,7 @@ function filterQC(from,to,factory,style,color){
     if(to&&q.date>to) return false;
     if(factory&&q.factory!==factory) return false;
     if(style&&!q.styleName.toLowerCase().includes(style.toLowerCase())) return false;
-    if(color&&q.color!==color) return false;
+    if(color&&q.color.toLowerCase()!==color.toLowerCase()) return false;
     return true;
   });
 }
