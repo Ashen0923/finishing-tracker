@@ -1726,22 +1726,26 @@ function renderDashCommon(p,txArr,filteredTx){
   const inColor=isBW?"#2E75B6":"#6A1B9A";
   const outColor=isBW?"#2E7D32":"#00695C";
 
-  const allWIP=getWIPMap(txArr);
-  const totalIn=filteredTx.reduce((a,t)=>a+(t.inQty||0),0);
-  const totalOut=filteredTx.reduce((a,t)=>a+(t.outQty||0),0);
-  const openWIP=allWIP.filter(w=>w.wip>0);
-  const cleared=allWIP.filter(w=>getPlanStatus(w.styleName,w.color,w.totalIn,w.wip)==="cleared");
+  // Use filteredTx for ALL KPIs so filters affect everything consistently
+  const allWIP=getWIPMap(txArr);         // full WIP map (for charts/table)
+  const filteredWIP=getWIPMap(filteredTx); // filtered WIP map (for KPI cards)
+  const totalIn=filteredTx.reduce((a,t)=>a+(t.inQty!==""?Number(t.inQty):0),0);
+  const totalOut=filteredTx.reduce((a,t)=>a+(t.outQty!==""?Number(t.outQty):0),0);
+  const openWIP=filteredWIP.filter(w=>w.wip>0);
+  const cleared=filteredWIP.filter(w=>getPlanStatus(w.styleName,w.color,w.totalIn,w.wip)==="cleared");
   setEl(`${p}-in`,totalIn);
   setEl(`${p}-out`,totalOut);
-  setEl(`${p}-wip`,allWIP.reduce((a,w)=>a+w.wip,0));
+  setEl(`${p}-wip`,filteredWIP.reduce((a,w)=>a+w.wip,0));
   setEl(`${p}-open`,openWIP.length);
   setEl(`${p}-entries`,filteredTx.length);
   setEl(`${p}-cleared`,cleared.length);
   const sorted=[...allWIP].sort((a,b)=>b.wip-a.wip);
-  const topS=sorted[0];
+  // Use filteredWIP for top style and factory KPIs
+  const filtSorted=[...filteredWIP].sort((a,b)=>b.wip-a.wip);
+  const topS=filtSorted[0];
   setEl(`${p}-top-style`,topS?topS.styleName:"—");
   setEl(`${p}-top-style-sub`,topS?`WIP: ${topS.wip} | ${topS.color}`:"");
-  const facMap={};allWIP.forEach(w=>{facMap[w.factory]=(facMap[w.factory]||0)+w.wip;});
+  const facMap={};filteredWIP.forEach(w=>{facMap[w.factory]=(facMap[w.factory]||0)+w.wip;});
   const topF=Object.entries(facMap).sort((a,b)=>b[1]-a[1])[0];
   setEl(`${p}-top-fac`,topF?topF[0]:"—");
   setEl(`${p}-top-fac-sub`,topF?`Total WIP: ${topF[1]}`:"");
