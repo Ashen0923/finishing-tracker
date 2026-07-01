@@ -1781,11 +1781,11 @@ function renderDashCommon(p,txArr,filteredTx){
   const prodWips=products.map(pr=>allWIP.filter(w=>w.product===pr).reduce((a,w)=>a+w.wip,0));
   makeChart(`${chartPfx}-chart-product`,"bar",{labels:products,datasets:[{label:"WIP",data:prodWips,backgroundColor:inColor,borderRadius:4}]});
 
-  // All styles table sorted descending by WIP — with In Washing column
+  // All styles table sorted descending by WIP — filtered
   const bwWIPMap=getWIPMap(bwTx);
   const tbody=document.getElementById(`${chartPfx}-top5`);
   if(tbody){
-    const allSorted=[...allWIP].sort((a,b)=>b.wip-a.wip);
+    const allSorted=[...filteredWIP].sort((a,b)=>b.wip-a.wip);
     tbody.innerHTML=allSorted.length?allSorted.map((w,i)=>{
       // In Washing = BW OUT - AW IN for this style+color
       const bwEntry=bwWIPMap.find(b=>b.styleName.toLowerCase()===w.styleName.toLowerCase()&&b.color.toLowerCase()===w.color.toLowerCase());
@@ -1830,7 +1830,10 @@ function onAWFilterChange(){
 }
 function clearAWFilters(){
   ["adf-range","adf-factory","adf-product","adf-wash"].forEach(id=>{document.getElementById(id).value=id==="adf-range"?"all":"";});
-  ["adf-style","adf-color"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+  const adfStyle=document.getElementById("adf-style");
+  const adfColor=document.getElementById("adf-color");
+  if(adfStyle) adfStyle.value="";
+  if(adfColor){adfColor.innerHTML='<option value="">All Colors</option>';adfColor.value="";}
   document.getElementById("adf-cw1").style.display="none";
   document.getElementById("adf-cw2").style.display="none";
   renderAWDash();
@@ -2115,15 +2118,15 @@ function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-color",
 
 // ── COLOR FILTER POPULATE ────────────────────────────
 function populateColorFilter(styleId, colorId){
-  const styleVal=document.getElementById(styleId).value.trim().toLowerCase();
+  const styleEl=document.getElementById(styleId);
   const colorSel=document.getElementById(colorId);
-  if(!colorSel) return;
+  if(!colorSel||!styleEl) return;
+  const styleVal=styleEl.value.trim().toLowerCase();
   const prevVal=colorSel.value;
-  // Get matching colors from styles array
   const colors=styleVal
-    ?[...new Set(styles.filter(s=>s.styleName.toLowerCase().includes(styleVal)).map(s=>s.color))]
+    ?[...new Set(styles.filter(s=>s.styleName.toLowerCase().includes(styleVal)).map(s=>s.color))].sort()
     :[...new Set(styles.map(s=>s.color))].sort();
-  colorSel.innerHTML='<option value="">All Colors</option>'+colors.map(col=>`<option value="${col}"${col===prevVal?' selected':''}>${col}</option>`).join('');
+  colorSel.innerHTML='<option value="">All Colors</option>'+colors.map(col=>`<option value="${col}"${col.toLowerCase()===prevVal.toLowerCase()?' selected':''}>${col}</option>`).join('');
 }
 
 // ── AUTOCOMPLETE ─────────────────────────────────────
