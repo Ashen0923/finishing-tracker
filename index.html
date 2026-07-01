@@ -1688,7 +1688,7 @@ function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId,styleId,colorId)
     from=document.getElementById(fromId).value;
     to=document.getElementById(toId).value||t;
   }
-  return txArr.filter(tx=>{
+  const result=txArr.filter(tx=>{
     const d=tx.inDate||tx.outDate;
     if(from&&d<from)return false;
     if(range!=="all"&&range!=="custom"&&d>to)return false;
@@ -1700,6 +1700,8 @@ function filterTx(txArr,rangeId,fromId,toId,facId,prodId,washId,styleId,colorId)
     if(colorF&&tx.color.toLowerCase()!==colorF.toLowerCase())return false;
     return true;
   });
+  console.log(`filterTx: range=${range} from=${from} to=${to} styleF=${styleF} colorF=${colorF} input=${txArr.length} output=${result.length}`);
+  return result;
 }
 
 function showAlert(id,msg,type){
