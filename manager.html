@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#EEF2F7;color:#1a1a2e;display:flex;min-height:100vh;font-size:13px;}
-#sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;box-shadow:3px 0 12px rgba(0,0,0,.15);overflow-y:auto;}
+#sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;box-shadow:3px 0 12px rgba(0,0,0,.15);overflow:hidden;}
 .sb-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
 .sb-logo h1{font-size:11.5px;font-weight:700;color:#fff;letter-spacing:.8px;text-transform:uppercase;line-height:1.5;}
 .sb-logo p{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;}
@@ -27,7 +27,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#EEF2F7;color:#1a1a2e;di
 #sidebar nav button.active{background:var(--blue);color:#fff;font-weight:600;}
 #sidebar nav button.active-aw{background:var(--purple)!important;}
 #sidebar nav button .ic{font-size:13px;width:16px;text-align:center;}
-.sb-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);margin-top:auto;}
+.sb-footer{padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);flex-shrink:0;}
+#sidebar nav{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.2) transparent;}
 .sb-footer .ls{font-size:10px;color:rgba(255,255,255,.35);margin-bottom:9px;}
 #sync-btn{width:100%;padding:9px;background:var(--orange);color:#fff;border:none;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;}
 #sync-btn:hover{opacity:.88;}
@@ -835,10 +836,32 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
       <div class="fg"><label>From Date</label><input type="date" id="tx-from" onchange="renderAllTx()"/></div>
       <div class="fg"><label>To Date</label><input type="date" id="tx-to" onchange="renderAllTx()"/></div>
       <div class="fg"><label>Style</label><input type="text" id="tx-style" placeholder="Search…" oninput="renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
+      <div class="fg"><label>Color</label><input type="text" id="tx-color" placeholder="Search…" oninput="renderAllTx()" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;"/></div>
       <div class="fg"><label>Factory</label>
         <select id="tx-factory" onchange="renderAllTx()"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+      <div class="fg"><label>Show Qty</label>
+        <select id="tx-qty-filter" onchange="renderAllTx()">
+          <option value="both">IN &amp; OUT</option>
+          <option value="in">IN Qty only</option>
+          <option value="out">OUT Qty only</option>
+        </select></div>
       <button class="btn-clear" onclick="clearTxFilters()">Clear</button>
     </div>
+
+    <!-- KPI mini cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+      <div class="kpi-card g" style="padding:14px 18px">
+        <div class="kpi-label">Total IN Qty (filtered)</div>
+        <div class="kpi-val" id="tx-kpi-in">0</div>
+        <div class="kpi-sub">Sum of IN quantities in table</div>
+      </div>
+      <div class="kpi-card o" style="padding:14px 18px">
+        <div class="kpi-label">Total OUT Qty (filtered)</div>
+        <div class="kpi-val" id="tx-kpi-out">0</div>
+        <div class="kpi-sub">Sum of OUT quantities in table</div>
+      </div>
+    </div>
+
     <div class="section">
       <div class="section-hdr"><h3>Transaction Records</h3><span id="tx-count" style="font-size:11px;color:var(--grey)"></span></div>
       <div class="tbl-wrap"><table>
@@ -2027,21 +2050,38 @@ function renderAllTx(){
   const from=document.getElementById("tx-from").value;
   const to=document.getElementById("tx-to").value;
   const style=document.getElementById("tx-style").value.toLowerCase();
+  const color=document.getElementById("tx-color")?document.getElementById("tx-color").value.toLowerCase():"";
   const fac=document.getElementById("tx-factory").value;
+  const qtyFilter=document.getElementById("tx-qty-filter")?document.getElementById("tx-qty-filter").value:"both";
+
   let data=[];
   if(proc==="both"||proc==="bw") bwTx.forEach(t=>data.push({...t,process:"BW"}));
   if(proc==="both"||proc==="aw") awTx.forEach(t=>data.push({...t,process:"AW"}));
   if(from) data=data.filter(t=>(t.inDate||t.outDate)>=from);
   if(to)   data=data.filter(t=>(t.inDate||t.outDate)<=to);
   if(style) data=data.filter(t=>t.styleName.toLowerCase().includes(style));
+  if(color) data=data.filter(t=>t.color.toLowerCase().includes(color));
   if(fac) data=data.filter(t=>t.factory===fac);
+
+  // Filter by IN/OUT qty presence
+  if(qtyFilter==="in")  data=data.filter(t=>t.inQty!==""&&t.inQty!==null&&Number(t.inQty)>0);
+  if(qtyFilter==="out") data=data.filter(t=>t.outQty!==""&&t.outQty!==null&&Number(t.outQty)>0);
+
+  // Calculate KPIs
+  const totalIn=data.reduce((a,t)=>a+(t.inQty!==""&&t.inQty!==null?Number(t.inQty):0),0);
+  const totalOut=data.reduce((a,t)=>a+(t.outQty!==""&&t.outQty!==null?Number(t.outQty):0),0);
+  const kpiIn=document.getElementById("tx-kpi-in");
+  const kpiOut=document.getElementById("tx-kpi-out");
+  if(kpiIn) kpiIn.textContent=totalIn.toLocaleString();
+  if(kpiOut) kpiOut.textContent=totalOut.toLocaleString();
+
   document.getElementById("tx-count").textContent=`Showing ${data.length} records`;
   const tbody=document.getElementById("tx-body");
   tbody.innerHTML=data.length?data.map((t,i)=>`<tr>
     <td><span class="badge" style="background:${t.process==="BW"?"var(--lblue)":"var(--lpurple)"};color:${t.process==="BW"?"var(--blue)":"var(--purple)"}">${t.process}</span></td>
     <td>${i+1}</td><td>${t.month}</td><td>${t.week}</td><td><strong>${t.styleName}</strong></td><td>${t.color}</td><td>${t.factory}</td>
-    <td>${t.inDate||"—"}</td><td>${t.inTime||"—"}</td><td>${t.inQty!==""?t.inQty:"—"}</td>
-    <td>${t.outDate||"—"}</td><td>${t.outTime||"—"}</td><td>${t.outQty!==""?t.outQty:"—"}</td>
+    <td>${t.inDate||"—"}</td><td>${t.inTime||"—"}</td><td>${t.inQty!==""&&t.inQty!==null?t.inQty:"—"}</td>
+    <td>${t.outDate||"—"}</td><td>${t.outTime||"—"}</td><td>${t.outQty!==""&&t.outQty!==null?t.outQty:"—"}</td>
     <td>${wipBadge(t.wipRow)}</td>
     <td>${planStatusBadge(t.styleName,t.color,
       (t.process==="BW"?bwTx:awTx).filter(r=>r.styleName===t.styleName&&r.color===t.color).reduce((a,r)=>a+(r.inQty||0),0),
@@ -2063,7 +2103,7 @@ function clearWIPFilters(){
   });
   renderWIPSummary();
 }
-function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-factory"].forEach(id=>{document.getElementById(id).value=id==="tx-process"?"both":"";});renderAllTx();}
+function clearTxFilters(){["tx-process","tx-from","tx-to","tx-style","tx-color","tx-factory","tx-qty-filter"].forEach(id=>{const el=document.getElementById(id);if(el)el.value=id==="tx-process"?"both":id==="tx-qty-filter"?"both":"";});renderAllTx();}
 
 // ── AUTOCOMPLETE ─────────────────────────────────────
 function styleAC(val,prefix){
