@@ -608,7 +608,16 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="section">
       <div class="section-hdr"><h3>All Entries</h3><span id="bw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
-      <div class="tbl-wrap"><table>
+      <div class="filter-bar" style="margin-bottom:12px">
+        <div class="fg"><label>From Date</label><input type="date" id="bwt-from" onchange="renderTodayEntries('bw')"/></div>
+        <div class="fg"><label>To Date</label><input type="date" id="bwt-to" onchange="renderTodayEntries('bw')"/></div>
+        <div class="fg"><label>Style</label><input type="text" id="bwt-style" placeholder="Search…" oninput="populateColorFilter('bwt-style','bwt-color');renderTodayEntries('bw')" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
+        <div class="fg"><label>Color</label><select id="bwt-color" onchange="renderTodayEntries('bw')"><option value="">All Colors</option></select></div>
+        <div class="fg"><label>Factory</label><select id="bwt-factory" onchange="renderTodayEntries('bw')"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+        <div class="fg"><label>Show Qty</label><select id="bwt-qty" onchange="renderTodayEntries('bw')"><option value="both">IN &amp; OUT</option><option value="in">IN only</option><option value="out">OUT only</option></select></div>
+        <button class="btn-clear" onclick="clearEntryFilters('bw')">Clear</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:450px;overflow-y:auto"><table>
         <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
         <tbody id="bw-today-body"></tbody>
       </table></div>
@@ -736,7 +745,16 @@ tbody td{padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowr
     </div>
     <div class="section">
       <div class="section-hdr"><h3>All Entries</h3><span id="aw-today-count" style="font-size:11px;color:var(--grey)"></span></div>
-      <div class="tbl-wrap"><table>
+      <div class="filter-bar" style="margin-bottom:12px">
+        <div class="fg"><label>From Date</label><input type="date" id="awt-from" onchange="renderTodayEntries('aw')"/></div>
+        <div class="fg"><label>To Date</label><input type="date" id="awt-to" onchange="renderTodayEntries('aw')"/></div>
+        <div class="fg"><label>Style</label><input type="text" id="awt-style" placeholder="Search…" oninput="populateColorFilter('awt-style','awt-color');renderTodayEntries('aw')" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:12px"/></div>
+        <div class="fg"><label>Color</label><select id="awt-color" onchange="renderTodayEntries('aw')"><option value="">All Colors</option></select></div>
+        <div class="fg"><label>Factory</label><select id="awt-factory" onchange="renderTodayEntries('aw')"><option value="">All</option><option>SGL</option><option>BDD</option><option>KGG</option><option>KG2</option><option>SFC KD</option></select></div>
+        <div class="fg"><label>Show Qty</label><select id="awt-qty" onchange="renderTodayEntries('aw')"><option value="both">IN &amp; OUT</option><option value="in">IN only</option><option value="out">OUT only</option></select></div>
+        <button class="btn-clear" onclick="clearEntryFilters('aw')">Clear</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:450px;overflow-y:auto"><table>
         <thead><tr><th>Style</th><th>Color</th><th>Factory</th><th>IN Date</th><th>IN Time</th><th>IN Qty</th><th>OUT Date</th><th>OUT Time</th><th>OUT Qty</th><th>Row WIP</th><th>Cum. WIP</th><th>Remarks</th><th></th></tr></thead>
         <tbody id="aw-today-body"></tbody>
       </table></div>
@@ -2283,10 +2301,40 @@ function deleteEntry(process,rowId){
   renderTodayEntries(process);
   refreshDashboards();
 }
+function clearEntryFilters(process){
+  const p=process==="bw"?"bwt":"awt";
+  ["from","to","style","factory","qty"].forEach(f=>{
+    const el=document.getElementById(`${p}-${f}`);
+    if(el) el.value=f==="qty"?"both":"";
+  });
+  const colorSel=document.getElementById(`${p}-color`);
+  if(colorSel){colorSel.innerHTML='<option value="">All Colors</option>';colorSel.value="";}
+  renderTodayEntries(process);
+}
+
 function renderTodayEntries(process){
   const arr=process==="bw"?bwTx:awTx;
-  // Show all entries sorted by most recent first
-  const sorted=[...arr].sort((a,b)=>{
+  const p=process==="bw"?"bwt":"awt";
+
+  // Read filters
+  const from=document.getElementById(`${p}-from`)?document.getElementById(`${p}-from`).value:"";
+  const to=document.getElementById(`${p}-to`)?document.getElementById(`${p}-to`).value:"";
+  const styleF=document.getElementById(`${p}-style`)?document.getElementById(`${p}-style`).value.toLowerCase():"";
+  const colorF=document.getElementById(`${p}-color`)?document.getElementById(`${p}-color`).value:"";
+  const factoryF=document.getElementById(`${p}-factory`)?document.getElementById(`${p}-factory`).value:"";
+  const qtyF=document.getElementById(`${p}-qty`)?document.getElementById(`${p}-qty`).value:"both";
+
+  let filtered=[...arr];
+  if(from) filtered=filtered.filter(t=>(t.inDate||t.outDate||"")>=from);
+  if(to)   filtered=filtered.filter(t=>(t.inDate||t.outDate||"")<=to);
+  if(styleF) filtered=filtered.filter(t=>t.styleName.toLowerCase().includes(styleF));
+  if(colorF) filtered=filtered.filter(t=>t.color.toLowerCase()===colorF.toLowerCase());
+  if(factoryF) filtered=filtered.filter(t=>t.factory===factoryF);
+  if(qtyF==="in")  filtered=filtered.filter(t=>t.inQty!==""&&Number(t.inQty)>0);
+  if(qtyF==="out") filtered=filtered.filter(t=>t.outQty!==""&&Number(t.outQty)>0);
+
+  // Sort most recent first
+  const sorted=filtered.sort((a,b)=>{
     const da=a.inDate||a.outDate||"";
     const db=b.inDate||b.outDate||"";
     return db.localeCompare(da);
