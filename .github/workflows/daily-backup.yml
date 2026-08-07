@@ -1,0 +1,31 @@
+name: Daily Midnight Backup
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # 18:00 UTC = midnight Sri Lanka (UTC+6)
+  workflow_dispatch:        # Manual trigger button on GitHub
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy main to backup branch
+        run: |
+          DATE=$(date +"%Y-%m-%d")
+          git config user.name "Backup Bot"
+          git config user.email "backup@github.com"
+          git fetch origin backup
+          git checkout backup
+          git checkout main -- finishing_data.xlsx
+          git add finishing_data.xlsx
+          git diff --staged --quiet && echo "No changes to backup" || git commit -m "Daily backup: $DATE"
+          git push origin backup
+          echo "✅ Backup complete for $DATE"
